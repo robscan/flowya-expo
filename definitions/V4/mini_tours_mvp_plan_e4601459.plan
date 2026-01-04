@@ -1,0 +1,982 @@
+---
+name: Mini Tours MVP Plan
+overview: "Plan completo para construir Mini Tours desde cero, organizado en 10 scopes bien definidos que van desde la fundación hasta el MVP completo. Cada scope es independiente y testeable, siguiendo los principios del manifiesto: contextual, ligero, y enfocado en el movimiento y la curiosidad."
+todos: []
+---
+
+# Plan de Construcción: Mini Tours MVP
+
+## Visión General
+
+Construcción completa de Mini Tours desde cero, siguiendo la definición de producto. El plan está organizado en 10 scopes independientes y progresivos, cada uno con entregables claros y testeables.**Principios clave:**
+
+- Spots son incompletos por diseño
+- Paths son sugerencias, no obligaciones (NOTA: En imágenes puede aparecer "Route", pero el lenguaje correcto es "Path" según definición de producto)
+- Narration es contextual y reactiva
+- Flow es el estado activo central
+- Feedback simple: 👍 y "Not my vibe"
+
+**Diseño y Estilo (crítico desde el inicio):**
+
+- Estilo Glass de Apple (glassmorphism): Efectos de blur y transparencia desde el Scope 1
+- Componentes visuales identificados: Spot Cards con glass, Modales/Drawers con blur, Tab bars con efecto glass
+- Microcopys: La definición de producto es la fuente de verdad, no los textos de las imágenes de referencia
+- Sistema de diseño coherente y escalable para evitar romper diseño en el futuro
+
+---
+
+## Scope 1: Fundación y Setup del Proyecto
+
+**Objetivo:** Establecer la base técnica del proyecto desde cero, evitando errores de compatibilidad web/React Native.
+
+### Tareas
+
+1. **Crear nuevo proyecto Expo**
+
+- `npx create-expo-app@latest mini-tours-expo --template blank-typescript`
+- Configurar `app.json` con nombre, slug, y configuración básica
+- Configurar TypeScript estricto
+- **IMPORTANTE**: Usar template blank para evitar conflictos con estilos CSS
+
+2. **Estructura de carpetas base**
+   ```javascript
+                              /app              # Rutas (expo-router)
+                              /components       # Componentes reutilizables
+                              /contexts         # Context providers
+                              /types            # Tipos TypeScript
+                              /data             # Datos y modelos
+                              /utils            # Utilidades
+                              /constants        # Constantes (theme, config)
+                              /hooks            # Custom hooks
+   ```
+
+3. **Dependencias esenciales**
+
+- expo-router (navegación)
+- react-native-reanimated (animaciones)
+- react-native-gesture-handler
+- @react-navigation/native
+- expo-av (para audio/narration)
+- expo-location (para geolocalización - preparación futura)
+- expo-speech (TTS para narration)
+- @react-native-async-storage/async-storage (persistencia)
+- **expo-blur** (para efectos glass/blur - CRÍTICO para diseño)
+- **expo-font** (para cargar tipografía Inter - CRÍTICO para tipografía)
+- **lucide-react-native** (sistema de iconos - ÚNICA librería de iconos permitida)
+
+4. **Configuración base**
+
+- Theme system (dark/light mode)
+- Estilos base usando StyleSheet (NO CSS puro para evitar errores de compatibilidad web)
+- Configuración de TypeScript paths (@/)
+- **Prevención de errores CSS**: Usar solo StyleSheet de React Native, evitar sintaxis CSS directa en web
+- Verificar que Metro bundler está configurado correctamente
+
+5. **Sistema de Diseño Glass (Apple Style)**
+
+- **Componente Glass Base** (`components/ui/GlassView.tsx` o similar)
+- Efecto blur con `BlurView` de expo-blur (iOS/Android) y fallback para web
+- Transparencias con rgba para efecto glass
+- Bordes sutiles para definición
+- Soportar dark/light mode
+- **Tokens de diseño** (`constants/designTokens.ts`)
+- **CRÍTICO - Sistema de espaciado basado en 8px**: Todos los tamaños, padding, margins, gaps deben ser múltiplos de 8px
+   - Espaciado: 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128
+   - NUNCA usar valores como 10, 12, 14, 18, 20, 22, etc.
+   - Border radius: 8, 16, 24, 32 (también múltiplos de 8)
+- Opacidades glass: 0.95, 0.85, 0.75
+- Radio de blur: 20, 30, 40 (valores de blur pueden variar)
+- Colores glass: rgba backgrounds para dark/light
+- **Tipografía (CRÍTICO)**: Inter como ÚNICA tipografía del proyecto
+   - NO mezclar tipografías bajo ninguna circunstancia
+   - Pesos: Regular, Medium, Semibold (uso puntual)
+   - Tamaños: Pocos tamaños, alineados a sistema base de 8px (múltiplos de 8)
+   - Line-height: Alineados a sistema base de 8px
+   - Priorizar legibilidad sobre personalidad
+   - Frases cortas y respirables (NO textos largos, NO justificar texto)
+   - Principio: "El texto acompaña al lugar, no compite con él"
+- Iconos: 16, 24, 32, 40, 48 (múltiplos de 8) - pero siempre en contenedores ≥ 48px x 48px para elementos accionables
+- **Utilidades de glass** (`utils/glassStyles.ts`)
+- Funciones helper para crear estilos glass
+- Platform-specific handling (iOS blur nativo, web fallback)
+- Theme-aware glass colors
+- **Sistema de espaciado (CRÍTICO)** (`constants/spacing.ts`)
+- Constantes para todos los espacios basados en múltiplos de 8px
+- `spacing = { xs: 8, sm: 16, md: 24, lg: 32, xl: 40, '2xl': 48, '3xl': 56, '4xl': 64, '5xl': 72, '6xl': 80, '7xl': 88, '8xl': 96, '9xl': 104, '10xl': 112, '11xl': 120, '12xl': 128 }`
+- Usar estas constantes en lugar de valores hardcodeados
+- Helper functions para padding, margin, gap con valores múltiplos de 8
+- **Sistema de Tipografía (CRÍTICO)** (`constants/typography.ts`)
+- **Inter como ÚNICA tipografía** del proyecto (NO mezclar tipografías)
+- Cargar fuentes Inter con expo-font (Regular, Medium, Semibold)
+- **Pesos disponibles**: Regular (400), Medium (500), Semibold (600 - uso puntual)
+- **Tamaños tipográficos** (alineados a sistema base de 8px):
+   - Ejemplos: 12, 14, 16, 18, 20, 24, 28, 32 (o similar, pocos tamaños)
+   - Line-height: Alineados a múltiplos de 8px (ej: 16, 20, 24, 28, 32, 40)
+- **Tokens tipográficos**:
+   - `textStyles.heading`, `textStyles.body`, `textStyles.caption`, `textStyles.label`
+   - Cada estilo con tamaño, line-height, peso y fontFamily (Inter)
+- **Reglas**:
+   - Priorizar legibilidad sobre personalidad
+   - Frases cortas y respirables (NO textos largos, NO justificar texto)
+   - Principio: "El texto acompaña al lugar, no compite con él"
+- Helper component: `ThemedText` con estilos tipográficos aplicados
+- **Principios de Diseño Visual (CRÍTICO)** (`docs/design-principles.md` o integrado en código)
+- **Principio rector**: "The interface should never compete with the place"
+   - Debe sentirse: calmado, presente, casi invisible
+   - NO debe sentirse: llamativo, denso, explicativo
+- **Grid y Layout**:
+   - Mobile-first, columna única
+   - Componentes apilados verticalmente
+   - Priorizar scroll natural
+   - NO layouts densos, NO tablas, NO múltiples columnas
+   - Contenido "ligero de recorrer"
+- **Capas y Jerarquía**:
+   - Orden: Mundo real (mapa/contenido) → UI contextual (chips, labels) → Overlays (Spot Detail, Flow) → Navegación (tab bar, top bar)
+   - NO bordes visibles, NO sombras duras
+   - Profundidad por: blur, elevación suave, movimiento
+- **Tipografía**:
+   - **Inter como ÚNICA tipografía** (NO mezclar tipografías)
+   - Pocos tamaños, contraste claro, mucho aire
+   - Tamaños y line-height alineados a sistema base de 8px
+   - Pesos: Regular, Medium, Semibold (uso puntual)
+   - Jerarquía: Título → Subtítulo → Texto corto → Microcopy
+   - NO textos largos, NO justificar texto
+   - Frases cortas y respirables, lenguaje humano y contemplativo
+   - Priorizar legibilidad sobre personalidad
+   - Principio: "El texto acompaña al lugar, no compite con él"
+- **Componentes**:
+   - Botones: Claros, pocos, bien separados
+   - NO más de 1 acción primaria por pantalla
+   - Áreas táctiles ≥ 48px (múltiplo de 8: 48px)
+   - Chips/Tags: Para contexto y estado, NO para navegación
+   - Cards: Solo cuando necesario, sin bordes, separadas por espacio
+- **Iconografía**:
+   - Minimal, lineal, sin detalles decorativos
+   - NO iconos "ilustrados", NO mezclar estilos
+   - Iconos como apoyo, no protagonistas
+- **Movimiento y Animación**:
+   - Funcional y emocional, NO decorativo
+   - Transiciones suaves, animaciones cortas, NUNCA "rebotar"
+   - Usar para: entrar/salir Flow, abrir/cerrar Spot Detail, cambiar estados
+   - Debe sentirse como "respirar", no como mostrar habilidad técnica
+- **Estados (OBLIGATORIO)**:
+   - Cada pantalla debe contemplar: vacío, cargando, activo/seleccionado, sin conexión
+   - NO loaders agresivos
+   - Preferir skeletons o silencios
+   - El sistema nunca debe "gritar"
+- **Accesibilidad (mínimo viable)**:
+   - Contraste suficiente
+   - Texto legible en exteriores
+   - Botones grandes (≥ 48px)
+   - No depender solo de color
+- **Narración y UI (relación clave)**:
+   - Flow activo: UI baja protagonismo, controles mínimos, pantalla limpia, audio protagonista
+   - Flow inactivo: UI informativa, exploratoria, visualmente clara
+
+6. **Dependencias adicionales para diseño**
+
+- expo-blur (para efectos blur nativos - ya incluido arriba)
+- expo-font (para cargar tipografía Inter - ya incluido arriba)
+- lucide-react-native (sistema de iconos - ya incluido arriba)
+
+7. **Validación inicial**
+
+- Build exitoso en iOS/Android/Web
+- Sin errores de CSS en web (especialmente "indexed property" errors)
+- Sistema de glass funcionando en todas las plataformas
+- Sistema de espaciado basado en 8px implementado
+- Estructura base funcional y testeable
+
+### TODOs del Scope 1
+
+- [x] Crear nuevo proyecto Expo y configurar estructura base (app.json, tsconfig.json, package.json)
+- [x] Instalar dependencias esenciales (expo-router, expo-blur, lucide-react-native, expo-font, expo-av, expo-speech, etc.)
+- [x] Crear estructura de carpetas (app, components, contexts, types, data, utils, constants, hooks)
+- [x] Implementar sistema de espaciado basado en 8px (constants/spacing.ts con helpers)
+- [x] Implementar sistema de tipografía Inter (constants/typography.ts, cargar fuentes con expo-font)
+- [x] Implementar sistema Glass de Apple (components/ui/GlassView.tsx, utils/glassStyles.ts)
+- [x] Implementar sistema de iconos Lucide con wrapper semántico (components/ui/Icon.tsx)
+- [x] Configurar theme system básico (constants/theme.ts) y TypeScript paths (@/)
+- [x] Crear root layout y navegación base (app/_layout.tsx, app/(tabs)/_layout.tsx)
+- [x] Validar build exitoso sin errores (iOS/Android/Web)
+
+### Entregables
+
+- Proyecto Expo funcionando sin errores
+- Estructura de carpetas establecida
+- Dependencias instaladas correctamente (incluyendo expo-blur)
+- Sistema de diseño glass implementado y funcionando
+- Sistema de espaciado basado en 8px implementado (constantes y utilidades en `constants/spacing.ts`)
+- Sistema de iconos Lucide implementado con wrapper semántico (`components/ui/Icon.tsx`)
+- Sistema de tipografía Inter implementado (`constants/typography.ts`, fuentes cargadas con expo-font)
+- Principios de diseño visual documentados e integrados
+- Build exitoso sin errores (especialmente CSS en web)
+- Base lista para incorporar componentes visuales con diseño consistente y principios aplicados
+
+---
+
+## Scope 2: Modelos de Datos y Tipos TypeScript
+
+**Objetivo:** Definir la estructura de datos completa según la definición de producto.
+
+### Tareas
+
+1. **Tipos base** (`types/index.ts`)
+
+- `Spot` (id, nombre opcional, ubicación, fotos, descripción opcional, horarios, costos, tipo, createdAt, createdBy)
+- `Path` (id, título, descripción, duración estimada, modo: walking/bike/car, spots: Spot[], createdAt)
+- `Narration` (id, spotId/pathId, tipo: anticipation/presence/transition/context, texto, audioUrl opcional, duración, triggers)
+- `UserInteraction` (spotId, action: viewed/saved/liked/not_my_vibe/visited, timestamp, context)
+- `FlowState` (status: idle/active, currentPathId?, currentSpotId?, progress)
+
+2. **Sistema de datos inicial** (`data/spots.ts`, `data/paths.ts`)
+
+- Datos de prueba (mock data) para desarrollo
+- Funciones helper: `getSpotById`, `getPathById`, `getSpotsByType`
+
+3. **Sistema de persistencia básico** (`utils/storage.ts`)
+
+- Guardar/cargar Spots guardados
+- Guardar/cargar Paths guardados
+- Guardar preferencias de usuario
+- Usar AsyncStorage
+
+### TODOs del Scope 2
+
+- [x] Definir tipos TypeScript base (types/index.ts: Spot, Path, Narration, UserInteraction, FlowState)
+- [x] Crear sistema de datos inicial con mock data (data/spots.ts, data/paths.ts, data/narrations.ts)
+- [x] Implementar sistema de persistencia básico (utils/storage.ts con AsyncStorage)
+
+### Entregables
+
+- Todos los tipos TypeScript definidos
+- Mock data para desarrollo
+- Sistema de persistencia funcional
+- Tests básicos de tipos
+
+---
+
+## Scope 3: Contextos y Estado Global
+
+**Objetivo:** Establecer la gestión de estado global con Context API.
+
+### Tareas
+
+1. **SpotContext** (`contexts/SpotContext.tsx`)
+
+- Estado de Spots
+- Funciones: crearSpot, actualizarSpot, obtenerSpots
+- Manejo de Spots incompletos
+
+2. **PathContext** (`contexts/PathContext.tsx`)
+
+- Estado de Paths
+- Funciones: crearPath, obtenerPaths, guardarPath
+- Generación sugerida de Paths
+
+3. **FlowContext** (`contexts/FlowContext.tsx`)
+
+- Estado de Flow (idle/active)
+- Funciones: startFlow, pauseFlow, endFlow, nextSpot
+- Progreso del Path actual
+- Spot actual y siguiente
+
+4. **SavedContext** (`contexts/SavedContext.tsx`)
+
+- Spots guardados (saved)
+- Spots con 👍 (liked)
+- Paths guardados
+- Funciones: toggleSave, toggleLike, markNotMyVibe
+
+5. **NarrationContext** (`contexts/NarrationContext.tsx`)
+
+- Estado de narration activa
+- Funciones: playNarration, stopNarration, pauseNarration
+- Manejo de triggers y reglas duras
+
+6. **Root Provider** (`app/_layout.tsx`)
+
+- Integrar todos los contextos
+- Configurar theme provider
+- Setup de navegación base
+
+### TODOs del Scope 3
+
+- [x] Implementar SpotContext (contexts/SpotContext.tsx: estado, crearSpot, actualizarSpot, obtenerSpots)
+- [x] Implementar PathContext (contexts/PathContext.tsx: estado, crearPath, obtenerPaths, guardarPath)
+- [x] Implementar FlowContext (contexts/FlowContext.tsx: estado, startFlow, pauseFlow, endFlow, nextSpot)
+- [x] Implementar SavedContext (contexts/SavedContext.tsx: spots guardados, liked, paths guardados, toggleSave, toggleLike, markNotMyVibe)
+- [x] Implementar NarrationContext (contexts/NarrationContext.tsx: estado, playNarration, stopNarration, pauseNarration)
+- [x] Integrar todos los contextos en root provider (app/_layout.tsx)
+
+### Entregables
+
+- Todos los contextos implementados
+- Providers integrados en root layout
+- Hooks custom (useSpot, usePath, useFlow, useSaved, useNarration)
+- Estado global funcional
+
+---
+
+## Scope 4: Navegación Principal (Tab Bar)
+
+**Objetivo:** Establecer la navegación principal con Tab Bar.
+
+### Tareas
+
+1. **Tab Layout** (`app/(tabs)/_layout.tsx`)
+
+- Tab bar con: Home, Gems, Saved, **Search** (según definición de producto actualizada)
+- Tab bar con efecto glass (blur + transparencia, sutil, casi invisible)
+- **Iconos**: Usar sistema semántico (icon.home, icon.gems, icon.saved, icon.search) de Lucide - minimal, lineal, como apoyo
+- **Áreas táctiles**: Cada tab debe tener contenedor ≥ 48px x 48px (NO solo el icono)
+- Theme integration (dark/light)
+- Haptic feedback en tabs (sutil, no agresivo)
+- Posicionamiento correcto: siempre visible, sobre contenido cuando sea necesario (capa de navegación)
+- **Principio**: Capa de navegación sobre overlays, UI contextual y mundo real
+- **Accesibilidad**: Debe poder usarse caminando (calma, indulgente, sin fricción)
+
+2. **Pantallas base vacías**
+
+- `app/(tabs)/home.tsx` (redirige a explore por ahora)
+- `app/(tabs)/gems.tsx` (placeholder)
+- `app/(tabs)/saved.tsx` (placeholder)
+- `app/(tabs)/search.tsx` (placeholder - nueva pantalla de búsqueda)
+
+3. **Profile como overlay** (`app/(tabs)/profile.tsx` o similar)
+
+- Accesible desde header icon
+- Modal/presentation style
+- No en tab bar
+
+### TODOs del Scope 4
+
+- [ ] Actualizar Tab Layout (app/(tabs)/_layout.tsx: agregar Search tab con icono Lucide, efecto glass)
+- [x] Crear pantallas base vacías (app/(tabs)/home.tsx, gems.tsx, saved.tsx)
+- [ ] Crear pantalla Search base (app/(tabs)/search.tsx: placeholder inicial)
+- [x] Implementar Profile como overlay (app/(tabs)/profile.tsx con efecto glass)
+
+### Entregables
+
+- Tab bar funcionando con 4 tabs (Home, Gems, Saved, Search)
+- Navegación básica entre tabs
+- Profile accesible como overlay
+- Sin errores de navegación
+
+---
+
+## Scope 5: Home - Explore Tab
+
+**Objetivo:** Implementar la vista Explore del Home.
+
+### Tareas
+
+1. **Explore Screen** (`app/(tabs)/home.tsx` - implementado como tab interno)
+
+- **Layout**: Columna única, scroll vertical natural, mobile-first
+- Lista de Spots cercanos (apilados verticalmente)
+- Cards de Spots con foto, nombre, distancia, tipo
+- **Principios de diseño**: Contenido ligero de recorrer, mucho aire entre elementos
+- Acciones: Ver detalles, Guardar, 👍
+- **Estados**: Vacío, cargando (skeletons), activo/seleccionado
+
+2. **Spot Card Component** (`components/SpotCard.tsx`)
+
+- **Layout**: Vertical glass layout según referencias visuales
+- **Estilo glass**: Background con blur y transparencia (Apple style)
+- Foto con overlay glass si aplica
+- Tags/pills con estilo glass (distancia, tipo, etc.) - para contexto, no navegación
+- **Tipografía**: Título → Subtítulo → Microcopy (pocos tamaños, mucho aire)
+- Acciones rápidas (guardar, like) - áreas táctiles ≥ 48px
+- Indicador si está guardado/liked
+- **NO bordes visibles, separación por espacio**
+
+3. **Spot Detail Sheet/Drawer** (`components/SpotDetailSheet.tsx`)
+
+- Drawer bottom sheet con efecto glass (overlay sobre mundo real)
+- Background blur detrás del drawer
+- Fotos en header con efecto glass overlay
+- Contenido organizado: título, tags, descripción, horarios, costos
+- Secciones: "Why it matters", "Cultural context", "How to visit", "Plan info"
+- **Principios**: Frases cortas, lenguaje contemplativo, texto acompaña no lidera
+- Cards internas con estilo glass sutil (sin bordes, separadas por espacio)
+- **Botones**: Máximo 1 acción primaria "Start from here" (contenedor ≥ 48px x 48px)
+- Acciones secundarias: Guardar (icon.bookmark), 👍 (icon.like), Not my vibe (icon.notMyVibe) - todas con contenedores ≥ 48px x 48px
+- **Iconos**: Usar sistema semántico de Lucide para todos los iconos
+- **Animación**: Transición suave al abrir/cerrar (como respirar)
+- **Accesibilidad**: Debe poder usarse caminando (áreas táctiles generosas, sin fricción)
+
+4. **Integración con Contextos**
+
+- Usar SpotContext para datos
+- Usar SavedContext para estado
+- Usar FlowContext para iniciar Flow
+
+### TODOs del Scope 5
+
+- [x] Implementar Explore Screen (app/(tabs)/home.tsx: lista vertical, scroll natural, estados)
+- [x] Implementar Spot Card Component (components/SpotCard.tsx: estilo glass, layout vertical, áreas táctiles)
+- [x] Implementar Spot Detail Sheet/Drawer (components/SpotDetailSheet.tsx: efecto glass, secciones, animaciones)
+- [x] Integrar Explore con contextos (SpotContext, SavedContext, FlowContext)
+
+### Estado de Implementación (Actualizado: 2024-12-19)
+
+**✅ COMPLETO**: Todos los componentes principales están implementados y funcionando.
+
+**Componentes Implementados**:
+- ✅ Explore Screen (`app/(tabs)/home.tsx`) - Lista vertical de Spots, estados vacío/cargando/datos, tabs internos (Explore | Map)
+- ✅ SpotCard Component (`components/SpotCard.tsx`) - Estilo glass, acciones rápidas, integración con SavedContext
+- ✅ SpotDetailSheet Component (`components/SpotDetailSheet.tsx`) - Drawer con efecto glass, acciones primarias/secundarias, animaciones
+
+**Notas y Limitaciones**:
+- ⚠️ **Paths sugeridos**: Según la definición de producto, Explore debe mostrar "Spots cercanos y Paths sugeridos de forma secundaria". Los Paths sugeridos no están implementados aún. Esto puede agregarse en el Scope 8 (Map) o como mejora posterior, ya que el foco principal del Scope 5 era la lista de Spots.
+- ⚠️ **Filtrado por cercanía**: El Explore muestra todos los Spots disponibles, no filtra por cercanía. El filtrado por geolocalización será implementado cuando se agregue la funcionalidad de ubicación real (Scope 8 o posterior).
+- ⚠️ **Secciones del SpotDetailSheet**: El plan menciona secciones específicas ("Why it matters", "Cultural context", "How to visit", "Plan info"), pero el tipo `Spot` actual no incluye campos para estas secciones. Esto es coherente con el principio de que "Spots son incompletos por diseño". La implementación actual muestra la descripción, horarios y costos disponibles. Las secciones específicas podrían agregarse en el futuro cuando haya más datos disponibles.
+- ⚠️ **Iniciar Flow desde Spot**: El botón "Start from here" existe pero la lógica completa para iniciar Flow desde un Spot individual (sin Path) está pendiente. Se implementará cuando se complete el Scope 7 (Flow).
+
+**Comparación con Definición de Producto**:
+- ✅ "Uso inmediato y contextual" - Implementado (lista de Spots inmediata)
+- ✅ "Muestra Spots cercanos" - Estructura implementada (filtrado por cercanía pendiente)
+- ⚠️ "Paths sugeridos de forma secundaria" - Pendiente (mencionado pero no implementado)
+- ✅ "Responde a: ¿Qué puedo hacer aquí y ahora?" - Implementado (lista de Spots disponibles)
+- ✅ Layout columna única, scroll vertical, mobile-first - ✅
+- ✅ Acciones: Ver detalles, Guardar, 👍 - ✅
+
+### Entregables
+
+- ✅ Explore screen funcional
+- ✅ Lista de Spots con cards
+- ✅ Spot detail drawer funcional
+- ✅ Acciones básicas (guardar, like, not my vibe) funcionando
+- ✅ Integración con contextos (SpotContext, SavedContext, FlowContext)
+- ⚠️ Paths sugeridos pendientes (será considerado en Scope 8 o mejora posterior)
+
+---
+
+## Scope 6: Sistema de Narration
+
+**Objetivo:** Implementar el sistema narrativo reactivo (pilar central).
+
+### Tareas
+
+1. **Narration Engine** (`utils/narrationEngine.ts`)
+
+- Lógica de triggers (aproaching, arriving, leaving, between)
+- Reglas duras (no superposición, no repetición, respeto de pausas)
+- Sistema de colas y prioridades
+
+2. **Audio Manager** (`utils/audioManager.ts`)
+
+- Reproducción de audio pre-grabado (expo-av)
+- Text-to-Speech (expo-speech)
+- Control de volumen, pausa, stop
+- Manejo de errores
+
+3. **Integración en NarrationContext** (`contexts/NarrationContext.tsx`)
+
+- Integración completa de narration engine + audio manager en el contexto
+- El hook useNarration() del contexto expone toda la funcionalidad
+- Control de estado de narration integrado
+
+4. **Narration Component** (`components/NarrationController.tsx`)
+
+- Componente que orquesta la narration
+- Integrado en FlowContext
+- Toggle de silenciar narration
+
+5. **Mock Narration Data** (`data/narrations.ts`)
+
+- Narraciones de ejemplo para cada tipo
+- Datos de prueba para desarrollo
+
+### TODOs del Scope 6
+
+- [x] Implementar Narration Engine (utils/narrationEngine.ts: triggers, reglas duras, colas)
+- [x] Implementar Audio Manager (utils/audioManager.ts: expo-av, expo-speech, control de volumen)
+- [x] Integrar engine y audio manager en NarrationContext (contexts/NarrationContext.tsx)
+- [x] Implementar Narration Component (components/NarrationController.tsx: orquestación, toggle silenciar)
+- [x] Crear mock narration data (data/narrations.ts: ejemplos para cada tipo)
+
+### Estado de Implementación (Actualizado: 2024-12-19)
+
+**✅ COMPLETO**: Todos los componentes principales están implementados y funcionando.
+
+**Componentes Implementados**:
+- ✅ Mock Narration Data (`data/narrations.ts`) - Datos de ejemplo, helpers para obtener narrations
+- ✅ Audio Manager (`utils/audioManager.ts`) - Reproducción con expo-av y expo-speech, control completo
+- ✅ Narration Engine (`utils/narrationEngine.ts`) - Triggers, reglas duras, colas, prioridades
+- ✅ NarrationContext (`contexts/NarrationContext.tsx`) - Integración completa con engine y audio manager
+- ✅ NarrationController (`components/NarrationController.tsx`) - Componente orquestador, helper useNarrationTriggers
+
+**Reglas Duras Implementadas** (según definición de producto):
+- ✅ No superposición de audios
+- ✅ No repetición de narrations
+- ✅ Respeto de pausas (3 segundos mínimo entre narrations)
+- ✅ No activar si el usuario va muy rápido (solo permite presencia)
+- ✅ Siempre se puede silenciar (toggleMute implementado)
+
+**Notas y Limitaciones**:
+- ⚠️ **Triggers manuales**: Los triggers (approaching, arriving, leaving, between) están implementados pero se activan manualmente desde el Flow Screen. La activación automática basada en geolocalización será en el Scope 7 (Flow Screen).
+- ⚠️ **Geofencing**: El sistema está preparado para recibir eventos, pero la integración con geofencing real o simulado será en Scope 7.
+- ⚠️ **Integración con Flow**: El NarrationController está integrado pero la orquestación completa con eventos de Flow será en Scope 7.
+- ✅ **Text-to-Speech**: Implementado con expo-speech, soporta múltiples idiomas (actualmente configurado para español).
+- ✅ **Audio pre-grabado**: Implementado con expo-av, soporta URLs de audio.
+
+**Comparación con Definición de Producto**:
+- ✅ "Sistema narrativo reactivo" - Estructura implementada (triggers y engine)
+- ✅ 4 tipos de narration (anticipation, presence, transition, context) - ✅
+- ✅ Reglas duras - ✅ Todas implementadas
+- ✅ TTS y audio pre-grabado - ✅
+- ✅ Toggle de silenciar - ✅
+- ⚠️ Activación automática por eventos de Flow - Pendiente (Scope 7)
+
+### Entregables
+
+- ✅ Sistema de narration funcional
+- ✅ 4 tipos de narration implementados (anticipation, presence, transition, context)
+- ✅ TTS funcionando (expo-speech)
+- ✅ Reproducción de audio pre-grabado (expo-av)
+- ✅ Reglas duras implementadas (no superposición, no repetición, respeto de pausas, velocidad)
+- ✅ Toggle de silenciar funcional
+- ✅ Sistema de colas y prioridades
+- ✅ Integración con NarrationContext
+- ⚠️ Activación automática de triggers (será completada en Scope 7)
+
+---
+
+## Scope 7: Flow (Estado Activo) - Core
+
+**Objetivo:** Implementar el estado Flow, el corazón de la experiencia.
+
+### Tareas
+
+1. **Flow Screen** (`app/(tabs)/flow.tsx` o overlay)
+
+- **Principio clave**: UI baja protagonismo, controles mínimos, pantalla limpia (audio protagonista)
+- Pantalla full-screen cuando Flow está activo
+- Header con efecto glass: "NOW MOVING" con blur background (sutil, casi invisible)
+- Segmented control: "List" y "Map" (áreas táctiles ≥ 48px)
+- **Layout**: Columna única, scroll natural
+- Muestra Spot actual y siguiente (jerarquía clara, mucho aire)
+- Progreso del Path (visual suave, no agresivo)
+- Timeline vertical con línea y checkmarks para spots pasados
+- Cards con estilo glass para spots actuales (sin bordes, profundidad por blur)
+- Controles: Pausar (icon.pause), Salir (icon.close), Siguiente (icon.next) - mínimos, bien separados, contenedores ≥ 48px x 48px
+- **Iconos**: Usar sistema semántico de Lucide (icon.pause, icon.play, icon.next, icon.previous, icon.skip)
+- Alertas contextuales con estilo glass (GPS, weather, etc.) - sutiles, no gritar
+- **Animación**: Transición suave al entrar/salir (funcional, emocional, como respirar)
+- **Accesibilidad**: Debe poder usarse caminando (controles grandes, calma, indulgente, sin fricción)
+
+2. **Mini Player Component** (`components/FlowMiniPlayer.tsx`)
+
+- Player minimizado con efecto glass
+- Background blur y transparencia
+- Muestra Spot actual, progreso básico
+- Botón para expandir
+- Posicionado sobre tab bar (con efecto glass también)
+
+3. **Full Player Component** (`components/FlowFullPlayer.tsx`)
+
+- Player expandido con efecto glass completo
+- Background con blur fuerte
+- Mapa o vista del Spot actual
+- Lista de Spots del Path con estilo glass
+- Cards para cada spot con blur sutil
+- Controles completos con estilo glass
+- Integración con Narration
+- Progreso visual con estilo glass
+
+4. **Flow State Management**
+
+- Integrar con FlowContext
+- Manejo de transiciones entre Spots
+- Cálculo de progreso
+- Detección de llegada/partida (simulada inicialmente)
+
+5. **Geofencing Simulado** (`utils/geofencingSimulator.ts`)
+
+- Simulación de proximidad a Spots
+- Triggers de eventos (approaching, arriving, leaving)
+- Para desarrollo sin GPS real
+
+### TODOs del Scope 7
+
+- [x] Implementar Flow Screen (components/FlowScreen.tsx: header glass, segmented control, timeline vertical, estados)
+- [x] Implementar Mini Player Component (components/FlowMiniPlayer.tsx: efecto glass, sobre tab bar)
+- [x] Implementar Full Player Component (components/FlowFullPlayer.tsx: efecto glass completo, integración narration)
+- [x] Implementar geofencing simulado (utils/geofencingSimulator.ts: triggers approaching, arriving, leaving)
+- [x] Integrar geofencing con triggers de narration en FlowScreen
+
+### Entregables
+
+- Flow screen funcional
+- Mini player y Full player implementados
+- Transiciones entre Spots
+- Integración con Narration
+- Geofencing simulado funcionando
+- Pausa y salida de Flow funcionando
+
+---
+
+## Scope 8: Home - Map Tab
+
+**Objetivo:** Implementar la vista Map del Home.
+
+### Tareas
+
+1. **Map Screen** (`app/(tabs)/home.tsx` - tab interno "Map")
+
+- Vista de mapa (usar expo-maps o react-native-maps si necesario, o implementación simple inicial)
+- Marcadores de Spots en mapa
+- Cluster de Spots cercanos
+- Navegación y zoom
+
+2. **Map Spot Marker** (`components/MapSpotMarker.tsx`)
+
+- Marcadores personalizados
+- Indicador de tipo de Spot
+- Tap para ver detalles
+
+3. **Crear Spot desde Mapa**
+
+- Long press en mapa para crear Spot
+- Modal de creación contextual
+- Ajuste de ubicación del pin
+- Foto opcional
+- Campos opcionales (nombre, descripción)
+
+4. **Integración con Map**
+
+- Ver Spot details desde marcador
+- Iniciar Flow desde mapa
+- Guardar Spot desde mapa
+- Filtrar Spots visibles
+
+5. **Home con Tabs Internos**
+
+- Reestructurar Home para tener tabs internos: Explore | Map
+- Navegación fluida entre ambas vistas
+
+### TODOs del Scope 8
+
+- [x] Implementar Map Screen (app/(tabs)/home.tsx: vista mapa, marcadores, implementación simple inicial)
+- [x] Implementar Map Spot Marker (components/MapSpotMarker.tsx: marcadores personalizados)
+- [x] Implementar creación de Spot desde mapa (long press, modal contextual, campos opcionales)
+- [x] Reestructurar Home con tabs internos (Explore | Map)
+- [x] Integrar mapa con SpotContext (crear spots, mostrar spots)
+- [x] Integrar con SpotDetailSheet (ver detalles desde marcador)
+
+### Entregables
+
+- Map view funcional
+- Spots visibles en mapa
+- Creación de Spot desde mapa
+- Navegación a detalles y Flow desde mapa
+- Home con tabs internos (Explore | Map)
+
+---
+
+## Scope 9: Gems Screen
+
+**Objetivo:** Implementar la pantalla Gems (lo que está brillando ahora).
+
+### Tareas
+
+1. **Gems Screen** (`app/(tabs)/gems.tsx`)
+
+- Layout tipo feed/cards
+- Header con estilo glass
+- Spots destacados (recientes, populares, sugeridos)
+- Cards con efecto glass para cada gem
+- Paths sugeridos (como contexto secundario, según definición: como contexto no foco)
+- Tags/pills con estilo glass (ARCHITECTURE, QUIET MOOD, etc.)
+
+2. **Gems Logic** (`utils/gemsLogic.ts`)
+
+- Algoritmo simple de recomendación
+- Basado en interacciones (views, saves, likes)
+- Spots recientes
+- Paths sugeridos basados en Spots guardados
+
+3. **Gems Components**
+
+- `GemsSpotCard` (variante de SpotCard para Gems)
+- `GemsPathCard` (card para Paths sugeridos)
+- Layout optimizado para scroll
+
+4. **Integración**
+
+- Usar SpotContext y PathContext
+- Usar SavedContext para personalización
+- Navegación a detalles y Flow
+
+### TODOs del Scope 9
+
+- [x] Implementar Gems Screen (app/(tabs)/gems.tsx: feed vertical, cards glass, estados)
+- [x] Implementar Gems Logic (utils/gemsLogic.ts: algoritmo recomendación basado en interacciones)
+- [x] Implementar Gems Components (GemsSpotCard, GemsPathCard con estilo glass)
+- [x] Integrar con SpotContext, PathContext, SavedContext
+- [x] Integrar navegación a detalles y Flow
+
+### Entregables
+
+- Gems screen funcional
+- Feed de Spots destacados
+- Paths sugeridos mostrados
+- Lógica de recomendación básica
+- Navegación integrada
+
+---
+
+## Scope 10: Search Screen
+
+**Objetivo:** Implementar la pantalla Search (búsqueda contextual de Spots y Paths).
+
+### Tareas
+
+1. **Search Screen** (`app/(tabs)/search.tsx`)
+
+- **Layout**: Columna única, scroll natural, mobile-first
+- Header con barra de búsqueda prominente (inspiración Apple Music)
+- Barra de búsqueda con estilo glass, placeholder claro
+- **Comportamiento de búsqueda**:
+   - Prioriza lugares cercanos al usuario
+   - Muestra sugerencias mientras el usuario escribe
+   - Sugerencias incluyen: Spots con nombres similares, Paths que contienen Spots relacionados, Lugares cercanos que coinciden
+- **Resultados**:
+   - Organizados por relevancia y cercanía
+   - Secciones: Spots similares, Paths relacionados, Lugares cercanos
+   - Cards con estilo glass para cada resultado
+- **Si no se encuentra lo buscado**:
+   - Opción para crear un nuevo Spot desde la búsqueda
+   - La creación sigue el flujo definido en CREACIÓN DE SPOT
+   - No requiere salir del contexto de búsqueda
+- **Estados**: Vacío, cargando (skeletons), con resultados, sin resultados
+- **Principios de diseño**: Inspiración Apple Music para navbar, título y barra de búsqueda
+
+2. **Search Components**
+
+- `SearchBar` (componente de barra de búsqueda con estilo glass)
+- `SearchSuggestion` (sugerencia individual)
+- `SearchResultCard` (card para resultados, reutilizando SpotCard o variante)
+- Layout optimizado para scroll
+
+3. **Search Logic** (`utils/searchLogic.ts`)
+
+- Lógica de búsqueda por nombre de Spot
+- Búsqueda en Paths que contienen Spots relacionados
+- Filtrado por cercanía (preparación para geolocalización futura)
+- Ranking de resultados por relevancia
+
+4. **Integración**
+
+- Usar SpotContext y PathContext para datos
+- Integración con creación de Spot desde búsqueda
+- Navegación a detalles y Flow desde resultados
+
+### TODOs del Scope 10
+
+- [x] Implementar Search Screen (app/(tabs)/search.tsx: barra búsqueda, sugerencias, resultados, estados)
+- [x] Implementar Search Components (SearchBar, SearchSuggestion, SearchResultCard con estilo glass)
+- [x] Implementar Search Logic (utils/searchLogic.ts: búsqueda, filtrado, ranking)
+- [x] Integrar creación de Spot desde búsqueda
+- [x] Integrar navegación a detalles y Flow desde resultados
+
+### Entregables
+
+- Search screen funcional
+- Barra de búsqueda con sugerencias
+- Resultados organizados por relevancia y cercanía
+- Opción de crear Spot desde búsqueda
+- Navegación integrada
+
+---
+
+## Scope 11: Saved Screen y Profile
+
+**Objetivo:** Implementar Saved (memoria personal) y Profile (preferencias).
+
+### Tareas - Saved Screen
+
+1. **Saved Screen** (`app/(tabs)/saved.tsx`)
+
+- **Layout**: Columna única, scroll natural, mobile-first
+- Header: "My Library" / "Saved" con subtítulo "Your personal collection" (jerarquía clara, mucho aire)
+- Tabs internos o secciones: Routes (Paths), Tours, Liked (según referencias visuales, pero usar "Paths" no "Routes")
+- Spots guardados (lista vertical, apilados)
+- Spots con 👍 (lista vertical, apilados)
+- Paths guardados (lista) - Cards con estilo glass (sin bordes, separadas por espacio)
+- Paths recorridos (historial)
+- Timeline ligero de actividad (sutil, no denso)
+- Cards con estilo glass para cada item guardado
+- Tags con estilo glass (FOCUS, QUIET, ENERGETIC, etc.) - para contexto/estado
+- Botones de acción (Edit con icon.edit, Start con icon.play) - contenedores ≥ 48px x 48px, máximo 1 primario por card
+- **Iconos**: Usar sistema semántico de Lucide para todos los iconos
+- **Estados**: Vacío, cargando (skeletons), activo/seleccionado
+
+2. **Saved Components**
+
+- `SavedSpotList` (lista filtrada de Spots)
+- `SavedPathList` (lista de Paths)
+- `ActivityTimeline` (timeline de actividad reciente)
+- Filtros y búsqueda básica
+
+3. **Funcionalidad de Saved**
+
+- Eliminar de guardados
+- Reordenar (opcional)
+- Compartir (opcional, futuro)
+
+### Tareas - Profile Screen
+
+1. **Profile Screen** (`app/(tabs)/profile.tsx` o overlay)
+
+- Modal o overlay con efecto glass
+- Background blur detrás del modal
+- Preferencias generales: Language, Private Routes, Publishing options
+- Secciones: "GENERAL", "DATA & PERMISSIONS"
+- Cards con estilo glass para cada sección
+- Ajustes: Location, Notifications, Audio
+- Toggles y switches con estilo nativo/glass
+- User profile card con estilo glass (avatar, nombre, email)
+
+2. **Profile Components**
+
+- Settings sections con estilo glass
+- Toggles y switches con estilo glass/nativo
+- Selectores básicos con efecto glass
+- Cards de información con blur sutil
+
+3. **Integración con Contextos**
+
+- Persistir preferencias
+- Aplicar ajustes (narration toggle, etc.)
+
+### TODOs del Scope 11
+
+- [x] Implementar Saved Screen (app/(tabs)/saved.tsx: tabs internos, lists, timeline, estados)
+- [x] Implementar Saved Components (SavedSpotList, SavedPathList, ActivityTimeline)
+- [x] Implementar Profile Screen (app/(tabs)/profile.tsx: preferencias, secciones glass, toggles)
+- [x] Integrar persistencia de preferencias en Profile
+
+### Entregables
+
+- Saved screen completo con todas las secciones
+- Profile screen funcional
+- Persistencia de preferencias
+- Timeline de actividad
+- Navegación integrada
+
+---
+
+## Dependencias entre Scopes
+
+```javascript
+Scope 1 (Fundación)
+  ↓
+Scope 2 (Modelos de Datos)
+  ↓
+Scope 3 (Contextos)
+  ↓
+Scope 4 (Navegación) ──┐
+  ↓                     │
+Scope 5 (Explore) ──────┤
+  ↓                     │
+Scope 6 (Narration) ────┼──→ Scope 7 (Flow)
+  ↓                     │
+Scope 8 (Map) ──────────┤
+  ↓                     │
+Scope 9 (Gems) ─────────┤
+  ↓                     │
+Scope 10 (Search) ──────┤
+  ↓                     │
+Scope 11 (Saved/Profile)┘
+```
+
+## Notas de Implementación
+
+1. **Geolocalización**: Comenzar con simulación, preparar para real después
+2. **Narration**: Priorizar TTS, agregar pre-grabados progresivamente
+3. **Spots incompletos**: Asegurar que el sistema permita Spots sin todos los campos
+4. **Paths generados**: Implementar lógica simple de generación basada en Spots guardados
+5. **Feedback simple**: Solo 👍 y "Not my vibe", sin ratings numéricos
+6. **Multi-idioma**: Preparar estructura, pero comenzar con inglés
+7. **Persistencia**: AsyncStorage para datos locales, preparar para backend futuro
+8. **Principios de Diseño Visual (APLICAR EN TODOS LOS SCOPES)**:
+
+- **Principio rector**: "The interface should never compete with the place" - calmado, presente, casi invisible
+- **Layout**: Mobile-first, columna única, scroll natural, contenido ligero, NO layouts densos
+- **Capas**: Mundo real → UI contextual → Overlays → Navegación (sin bordes visibles, sin sombras duras)
+- **Tipografía**: Inter como ÚNICA tipografía (NO mezclar), pocos tamaños alineados a 8px, Regular/Medium/Semibold, frases cortas y respirables, NO justificar texto, principio: "El texto acompaña al lugar, no compite con él"
+- **Componentes**: Máximo 1 acción primaria por pantalla, áreas táctiles ≥ 48px, cards sin bordes
+- **Iconografía**: Minimal, lineal, como apoyo no protagonista, NO iconos ilustrados (usar Lucide React Native con nombres semánticos)
+- **Movimiento**: Funcional y emocional, suave, corto, NUNCA rebotar, debe sentirse como respirar
+- **Estados**: Vacío, cargando (skeletons), activo/seleccionado, sin conexión (NO loaders agresivos)
+- **Narración/UI**: Flow activo = UI baja protagonismo, controles mínimos; Flow inactivo = UI informativa
+
+8. **Sistema de Espaciado (CRÍTICO)**:
+
+- **Base 8px**: Todos los tamaños, padding, margins, gaps, border radius deben ser múltiplos de 8px
+- Valores permitidos: 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128
+- **NUNCA usar valores impares o no múltiplos de 8** (ej: 10, 12, 14, 18, 20, 22, etc.)
+- Usar constantes de espaciado desde el Scope 1
+- Aplicar este sistema consistentemente en todos los componentes
+
+9. **Diseño UI y Referencias Visuales**:
+
+- Pantallas de Stitch IA usadas como referencia visual de componentes y estilo
+- **CRÍTICO**: Los microcopys/textos de las imágenes NO son referencia - usar definición de producto
+- **CRÍTICO**: En imágenes aparece "Route" pero el lenguaje correcto es "Path" según definición
+- Estilo glass de Apple implementado desde Scope 1 para evitar problemas futuros
+- Sistema de diseño coherente y escalable
+
+10. **Sistema de Iconos y Áreas Táctiles (CRÍTICO)**:
+
+- **Lucide React Native**: ÚNICA librería de iconos permitida (NO usar @expo/vector-icons u otras)
+- **Nombres semánticos**: Usar nombres semánticos, NO nombres técnicos (ej: icon.like, icon.notMyVibe, icon.map, icon.audio)
+- **Wrapper semántico**: Crear componente que mapea nombres semánticos a iconos de Lucide
+- **Áreas táctiles**: Todos los elementos accionables deben tener ≥ 48px x 48px
+- **Contenedores**: Iconos accionables deben estar en contenedor que garantice zona táctil cómoda
+- **Principio general**: La interfaz debe poder usarse caminando - calma, indulgente, sin fricción
+- **Consistencia**: Peso visual y significado de iconos consistentes en toda la app
+- **NO mezclar librerías** de iconos bajo ninguna circunstancia
+
+11. **Sistema de Tipografía (CRÍTICO)**:
+
+- **Inter como ÚNICA tipografía** del proyecto (NO mezclar tipografías bajo ninguna circunstancia)
+- Cargar fuentes Inter con expo-font (Regular 400, Medium 500, Semibold 600)
+- **Pesos**: Regular, Medium, Semibold (uso puntual)
+- **Tamaños**: Pocos tamaños, alineados a sistema base de 8px
+- **Line-height**: Alineados a múltiplos de 8px
+- **Reglas**: Priorizar legibilidad, frases cortas y respirables, NO textos largos, NO justificar texto
+- **Principio rector**: "El texto acompaña al lugar, no compite con él"
+- Usar tokens tipográficos consistentes en toda la app
+
+12. **Prevención de errores CSS**:
+
+- Usar solo StyleSheet de React Native
+- Evitar CSS directo en web
+- Probar builds en web desde el inicio para detectar problemas temprano
+- Si es necesario soporte web específico, usar Platform.select con estilos nativos
+
+12. **Componentes Visuales Identificados**:
+
+   - Spot Cards con glass (vertical layout con foto, tags, descripción)
+   - Modales/Drawers con blur background
+   - Tab bars con efecto glass
+   - Flow UI con cards glass y timeline vertical
+   - Path cards con tags glass y métricas
+   - Profile cards con secciones glass
+   - Mini player con glass
+   - Full player con glass completo
+
+14. **Principios de Diseño Visual (CRÍTICO - Aplicar en todos los scopes)**:
+
+   - **Principio rector**: "The interface should never compete with the place" - calmado, presente, casi invisible
+   - **Layout**: Mobile-first, columna única, scroll natural, contenido ligero
+   - **Capas**: Mundo real → UI contextual → Overlays → Navegación (sin bordes, sin sombras duras)
+   - **Tipografía**: Inter como ÚNICA tipografía, pocos tamaños alineados a 8px, Regular/Medium/Semibold, frases cortas y respirables, NO justificar texto, principio: "El texto acompaña al lugar, no compite con él"
+   - **Componentes**: Máximo 1 acción primaria, áreas táctiles ≥ 48px, cards sin bordes
+   - **Iconografía**: Minimal, lineal, como apoyo no protagonista
+   - **Movimiento**: Funcional y emocional, suave, corto, nunca rebotar
+

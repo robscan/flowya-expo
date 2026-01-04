@@ -1,0 +1,457 @@
+---
+name: Mini Tours - Plan de Diseño UX/UI, QA y Lanzamiento
+overview: "Plan para completar el diseño final, QA exhaustivo y preparación para pruebas internas. Basado en Product Definition V5. Se conecta naturalmente con el plan anterior (Scopes 1-11 completados)."
+todos: []
+---
+
+# Plan de Diseño UX/UI, QA y Lanzamiento: Mini Tours
+
+## Visión General
+
+Este plan continúa desde donde termina el plan anterior (Scopes 1-11 completados). Se enfoca en:
+- **Versionamiento y preservación** del trabajo realizado
+- **Diseño UX/UI final** según Product Definition V5
+- **QA exhaustivo** antes de pruebas internas
+- **Preparación para lanzamiento** de versión de pruebas internas
+
+**Fuente de verdad:** Product Definition V5 (`definitions/V5/MINI TOURS Product Definition V5.rtf`)
+
+**Estado previo:** Scopes 1-11 del plan anterior completados
+- ✅ Fundación y Setup
+- ✅ Modelos de Datos
+- ✅ Contextos y Estado Global
+- ✅ Navegación Principal
+- ✅ Home - Explore Tab
+- ✅ Sistema de Narration
+- ✅ Flow (Estado Activo)
+- ✅ Home - Map Tab
+- ✅ Gems Screen
+- ✅ Search Screen
+- ✅ Saved Screen y Profile
+
+---
+
+## Scope 0: Versionamiento y Preservación del Estado Actual
+
+**Objetivo:** Crear un punto de control seguro del estado actual antes de comenzar diseño final y QA.
+
+### Tareas
+
+1. **Crear tag de versión en Git**
+
+- Tag: `v0.11.0-pre-ux-qa` (o similar según convención)
+- Descripción: "Estado previo a diseño UX/UI final y QA - Scopes 1-11 completados"
+- Commit final del estado actual
+- Verificar que todos los cambios estén commiteados
+
+2. **Documentar estado actual**
+
+- Crear `docs/ESTADO_PRE_UX_QA.md`
+- Listar todos los componentes implementados
+- Listar todas las funcionalidades completadas
+- Listar funcionalidades pendientes o parciales
+- Listar bugs conocidos (si los hay)
+- Listar dependencias y versiones actuales
+
+3. **Crear branch de preservación**
+
+- Branch: `preserve/pre-ux-qa-state`
+- Merge del estado actual
+- Branch protegido (no se modifica)
+
+4. **Backup de configuración**
+
+- Exportar configuración de proyecto (package.json, app.json, tsconfig.json)
+- Documentar variables de entorno (si las hay)
+- Documentar configuraciones específicas de plataforma
+
+5. **Verificar build funcional**
+
+- Build exitoso en iOS
+- Build exitoso en Android
+- Build exitoso en Web
+- Documentar cualquier error conocido
+
+### TODOs del Scope 0
+
+- [ ] Crear tag de versión `v0.11.0-pre-ux-qa`
+- [ ] Crear documentación de estado actual (`docs/ESTADO_PRE_UX_QA.md`)
+- [ ] Crear branch de preservación `preserve/pre-ux-qa-state`
+- [ ] Backup de configuraciones
+- [ ] Verificar builds en todas las plataformas
+- [ ] Documentar estado funcional actual
+
+### Entregables
+
+- Tag de versión creado
+- Documentación completa del estado actual
+- Branch de preservación protegido
+- Backup de configuraciones
+- Builds verificados y documentados
+
+---
+
+## Scope 12: Diseño UX/UI Final
+
+**Objetivo:** Refinar y completar el diseño UX/UI según Product Definition V5, asegurando coherencia visual y experiencia de usuario óptima.
+
+### Tareas
+
+1. **Auditoría de Diseño Actual**
+
+- Revisar todos los componentes implementados
+- Comparar con Product Definition V5
+- Identificar inconsistencias visuales
+- Identificar componentes que necesitan refinamiento
+- Crear lista de tareas de diseño
+- Revisar referencias visuales en `definitions/img_UI/` (solo como referencia visual, no microcopys)
+
+2. **Sistema de Diseño - Refinamiento**
+
+- Verificar sistema de espaciado (base 8px) en todos los componentes
+- Verificar tipografía Inter (única tipografía) en toda la app
+- Verificar iconografía Lucide (única librería) en toda la app
+- Verificar áreas táctiles (mínimo 48px) en todos los elementos accionables
+- Verificar sistema de glass/blur en overlays y navegación
+- Documentar tokens de diseño finales
+
+3. **Componentes - Refinamiento Visual**
+
+- **SpotCard**: Verificar estilo glass, espaciado, tipografía
+- **SpotDetailSheet**: Verificar drawer, blur, animaciones
+- **FlowScreen**: Verificar UI mínima, controles, timeline
+- **FlowMiniPlayer**: Verificar efecto glass, posicionamiento
+- **FlowFullPlayer**: Verificar player completo, integración
+- **Gems Cards**: Verificar feed, cards glass, tags
+- **Search Screen**: Verificar barra de búsqueda, resultados
+- **Saved Screen**: Verificar tabs, lists, timeline
+- **Profile Screen**: Verificar secciones, toggles, cards
+- **Tab Bar**: Verificar efecto glass, iconos, áreas táctiles
+- **Map View**: Verificar marcadores, interacciones
+
+4. **Estados Visuales - Completar**
+
+- Verificar estado vacío en todas las pantallas
+- Verificar estado cargando (skeletons) en todas las pantallas
+- Verificar estado activo/seleccionado en todos los componentes
+- Verificar estado offline (si aplica)
+- Verificar estados de error (si aplica)
+
+5. **Animaciones y Transiciones**
+
+- Revisar todas las animaciones (deben ser suaves, cortas, sin rebotes)
+- Verificar transiciones entre pantallas
+- Verificar transiciones de Flow (entrar/salir)
+- Verificar transiciones de modales/drawers
+- Asegurar que las animaciones "respiren", no presuman
+
+6. **Accesibilidad Visual**
+
+- Verificar contraste de texto en dark/light mode
+- Verificar legibilidad en exteriores (si aplica)
+- Verificar que no se dependa solo de color
+- Verificar áreas táctiles generosas
+- Verificar que la interfaz pueda usarse caminando
+
+7. **Microcopys y Textos**
+
+- Revisar todos los textos según Product Definition V5
+- Asegurar tono conversacional
+- Asegurar frases cortas y respirables
+- Verificar que no haya textos largos
+- Verificar que no se justifique texto
+- Aplicar principio: "El texto acompaña al lugar, no compite con él"
+
+8. **Dark/Light Mode**
+
+- Verificar coherencia en ambos modos
+- Verificar sistema glass en ambos modos
+- Verificar contraste y legibilidad en ambos modos
+- Verificar transiciones suaves entre modos
+
+### TODOs del Scope 12
+
+- [ ] Auditoría completa de diseño actual
+- [ ] Refinamiento de sistema de diseño (espaciado, tipografía, iconos)
+- [ ] Refinamiento visual de todos los componentes
+- [ ] Completar estados visuales en todas las pantallas
+- [ ] Revisar y ajustar animaciones y transiciones
+- [ ] Verificar accesibilidad visual
+- [ ] Revisar y ajustar microcopys según V5
+- [ ] Verificar dark/light mode completo
+
+### Entregables
+
+- Sistema de diseño refinado y documentado
+- Todos los componentes con diseño final
+- Estados visuales completos
+- Animaciones suaves y coherentes
+- Microcopys alineados con V5
+- Dark/light mode funcional y coherente
+
+---
+
+## Scope 13: QA Exhaustivo - Pruebas Internas
+
+**Objetivo:** Realizar QA completo antes de lanzar versión de pruebas internas, asegurando estabilidad y calidad.
+
+### Tareas
+
+1. **QA Funcional - Todas las Pantallas**
+
+- **Home (Explore)**: Navegación, lista de Spots, acciones (guardar, like), detalles
+- **Home (Map)**: Vista de mapa, marcadores, crear Spot, navegación
+- **Gems**: Feed, cards, navegación, acciones
+- **Search**: Búsqueda, sugerencias, resultados, crear Spot desde búsqueda
+- **Saved**: Tabs, lists, timeline, acciones
+- **Profile**: Preferencias, ajustes, navegación
+- **Flow**: Iniciar Flow, navegación entre Spots, pausar, salir, narration
+
+2. **QA de Integración - Contextos**
+
+- **SpotContext**: Crear, actualizar, eliminar, obtener Spots
+- **PathContext**: Crear, actualizar, obtener Paths, sugerencias
+- **FlowContext**: Iniciar, pausar, reanudar, terminar Flow
+- **SavedContext**: Guardar, like, not my vibe, timeline
+- **NarrationContext**: Reproducir, pausar, silenciar narration
+
+3. **QA de Persistencia**
+
+- Guardar Spots y Paths
+- Cargar datos al reiniciar app
+- Persistencia de preferencias
+- Persistencia de Saved (likes, saves, etc.)
+- Manejo de datos corruptos o incompatibles
+
+4. **QA de Plataformas**
+
+- **iOS**: Build, ejecución, navegación, interacciones, permisos
+- **Android**: Build, ejecución, navegación, interacciones, permisos
+- **Web**: Build, ejecución, navegación, interacciones, compatibilidad
+
+5. **QA de Rendimiento**
+
+- Tiempo de carga inicial
+- Tiempo de carga de pantallas
+- Rendimiento de scroll en listas largas
+- Rendimiento de mapa con muchos marcadores
+- Uso de memoria
+- Rendimiento de animaciones
+
+6. **QA de Permisos (Fase 1: Pruebas Internas)**
+
+- Permisos de ubicación: solicitud, denegación, modo manual
+- Permisos de notificaciones: solicitud, denegación (opcional en pruebas)
+- Manejo de estados de permisos
+- Navegación a configuración del sistema si es necesario
+
+7. **QA de Offline (Básico)**
+
+- Acceso a Spots guardados sin conexión
+- Acceso a Paths guardados sin conexión
+- Indicador de estado offline
+- Sincronización al volver conexión
+
+8. **QA de Narration**
+
+- Reproducción de TTS
+- Reproducción de audio pre-grabado (si aplica)
+- Triggers de narration (approaching, arriving, leaving, between)
+- Reglas duras (no superposición, no repetición, pausas)
+- Silenciar narration
+- Manejo de errores de audio
+
+9. **QA de Flujo de Usuario Completo**
+
+- Flujo: Explorar → Ver Spot → Guardar → Iniciar Flow → Recorrer → Salir
+- Flujo: Buscar → Crear Spot → Guardar → Ver en Saved
+- Flujo: Guardar varios Spots → Sugerencia de Path → Personalizar → Guardar
+- Flujo: Gems → Ver Spot → Like → Ver en Saved
+
+10. **QA de Edge Cases**
+
+- Spots sin nombre
+- Spots sin descripción
+- Paths con un solo Spot
+- Paths vacíos
+- Listas vacías (Saved, Gems, Search sin resultados)
+- Datos corruptos o incompatibles
+- Cambios de conexión durante uso
+- Cambios de permisos durante uso
+
+11. **QA de Accesibilidad**
+
+- Áreas táctiles (mínimo 48px)
+- Contraste de texto
+- Legibilidad
+- Navegación sin depender solo de color
+- Uso caminando (controles grandes, calma)
+
+12. **Documentación de Bugs**
+
+- Crear `docs/QA_BUGS.md`
+- Listar todos los bugs encontrados
+- Priorizar bugs (críticos, altos, medios, bajos)
+- Documentar pasos para reproducir
+- Documentar plataformas afectadas
+
+### TODOs del Scope 13
+
+- [ ] QA funcional de todas las pantallas
+- [ ] QA de integración de contextos
+- [ ] QA de persistencia
+- [ ] QA de plataformas (iOS, Android, Web)
+- [ ] QA de rendimiento
+- [ ] QA de permisos (Fase 1)
+- [ ] QA de offline básico
+- [ ] QA de narration
+- [ ] QA de flujos de usuario completos
+- [ ] QA de edge cases
+- [ ] QA de accesibilidad
+- [ ] Documentación de bugs encontrados
+
+### Entregables
+
+- QA completo realizado
+- Lista de bugs documentada y priorizada
+- Reporte de QA con resultados
+- Builds verificados en todas las plataformas
+- Rendimiento documentado
+
+---
+
+## Scope 14: Corrección de Bugs Críticos y Preparación para Pruebas Internas
+
+**Objetivo:** Corregir bugs críticos y preparar versión estable para pruebas internas.
+
+### Tareas
+
+1. **Corrección de Bugs Críticos**
+
+- Revisar lista de bugs del Scope 13
+- Priorizar bugs críticos (bloquean funcionalidad principal)
+- Corregir bugs críticos
+- Verificar correcciones
+- Actualizar documentación de bugs
+
+2. **Build de Pruebas Internas**
+
+- Crear build de desarrollo para iOS
+- Crear build de desarrollo para Android
+- Crear build web (si aplica)
+- Verificar que los builds funcionen correctamente
+- Documentar instrucciones de instalación
+
+3. **Configuración para Pruebas Internas**
+
+- Configurar modo de pruebas internas (si aplica)
+- Deshabilitar funcionalidades no listas (si aplica)
+- Configurar logging/debugging para pruebas
+- Documentar cómo reportar bugs durante pruebas
+
+4. **Documentación para Pruebas Internas**
+
+- Crear `docs/GUIA_PRUEBAS_INTERNAS.md`
+- Listar funcionalidades disponibles
+- Listar funcionalidades no disponibles
+- Instrucciones de uso básico
+- Cómo reportar bugs o feedback
+
+5. **Tag de Versión para Pruebas Internas**
+
+- Tag: `v0.12.0-internal-testing` (o similar)
+- Descripción: "Versión para pruebas internas - Pre-ux/qa completado"
+- Commit final antes de pruebas
+
+### TODOs del Scope 14
+
+- [ ] Corregir bugs críticos identificados en QA
+- [ ] Crear builds para pruebas internas (iOS, Android, Web)
+- [ ] Configurar modo de pruebas internas
+- [ ] Crear documentación para pruebas internas
+- [ ] Crear tag de versión para pruebas internas
+
+### Entregables
+
+- Bugs críticos corregidos
+- Builds listos para pruebas internas
+- Documentación para pruebas internas
+- Tag de versión creado
+
+---
+
+## Dependencias entre Scopes
+
+```javascript
+Plan Anterior (Scopes 1-11) ✅ COMPLETADO
+  ↓
+Scope 0 (Versionamiento) ──┐
+  ↓                         │
+Scope 12 (Diseño UX/UI) ────┤
+  ↓                         │
+Scope 13 (QA Exhaustivo) ───┤
+  ↓                         │
+Scope 14 (Corrección Bugs) ┘
+  ↓
+Versión para Pruebas Internas 🚀
+```
+
+---
+
+## Notas de Implementación
+
+1. **Product Definition V5 es la fuente de verdad**: Todas las decisiones de diseño y funcionalidad deben alinearse con V5 (`definitions/V5/MINI TOURS Product Definition V5.rtf`).
+
+2. **Fases de desarrollo claras**:
+   - **Fase 1: Pruebas Internas** (actual): Sin onboarding completo, permisos básicos, funcionalidad core
+   - **Fase 2: Usuarios Reales** (futuro): Con onboarding, permisos completos, funcionalidades adicionales
+
+3. **Principios de Diseño (CRÍTICO - Aplicar en Scope 12)**:
+   - **Principio rector**: "The interface should never compete with the place" - calmado, presente, casi invisible
+   - **Layout**: Mobile-first, columna única, scroll natural, contenido ligero
+   - **Capas**: Mundo real → UI contextual → Overlays → Navegación (sin bordes, sin sombras duras)
+   - **Tipografía**: Inter como ÚNICA tipografía, pocos tamaños alineados a 8px, Regular/Medium/Semibold, frases cortas y respirables, NO justificar texto
+   - **Componentes**: Máximo 1 acción primaria, áreas táctiles ≥ 48px, cards sin bordes
+   - **Iconografía**: Minimal, lineal, como apoyo no protagonista (Lucide React Native)
+   - **Movimiento**: Funcional y emocional, suave, corto, nunca rebotar
+   - **Estados**: Vacío, cargando (skeletons), activo/seleccionado, sin conexión
+
+4. **Sistema de Espaciado (CRÍTICO)**:
+   - Base 8px: Todos los tamaños, padding, margins, gaps, border radius deben ser múltiplos de 8px
+   - Valores permitidos: 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128
+   - NUNCA usar valores impares o no múltiplos de 8
+
+5. **Referencias Visuales**:
+   - Las imágenes en `definitions/img_UI/` son solo referencia visual de componentes y estilo
+   - **CRÍTICO**: Los microcopys/textos de las imágenes NO son referencia - usar Product Definition V5
+   - **CRÍTICO**: En imágenes puede aparecer "Route" pero el lenguaje correcto es "Path" según definición
+
+6. **QA debe ser exhaustivo**: No lanzar pruebas internas con bugs críticos conocidos.
+
+7. **Versionamiento**: Cada fase importante debe tener su tag de versión para poder volver atrás si es necesario.
+
+8. **Documentación**: Mantener documentación actualizada en cada scope para facilitar trabajo futuro.
+
+---
+
+## Próximos Pasos (Post Pruebas Internas)
+
+Una vez completadas las pruebas internas y recopilado feedback:
+
+1. **Scope 15**: Análisis de feedback de pruebas internas
+2. **Scope 16**: Implementación de mejoras basadas en feedback
+3. **Scope 17**: Preparación para Fase 2 (Usuarios Reales)
+   - Onboarding completo
+   - Gestión completa de permisos
+   - Funcionalidades adicionales según V5
+4. **Scope 18**: QA para usuarios reales
+5. **Scope 19**: Lanzamiento beta/público
+
+---
+
+**Estado del Plan**: En desarrollo
+**Última actualización**: [Fecha]
+**Versión del Plan**: 1.0
+**Basado en**: Product Definition V5
+**Plan anterior**: `definitions/V4/mini_tours_mvp_plan_e4601459.plan` (Scopes 1-11 completados)
+

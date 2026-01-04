@@ -1,0 +1,429 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2867
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 MINI TOURS\
+Product Definition \'b7 Antecedente Oficial para Desarrollo\
+\
+MANIFIESTO\
+\
+El mundo est\'e1 lleno de lugares.\
+Pero moverse sin intenci\'f3n convierte el descubrimiento en ruido.\
+\
+Mini Tours existe para ayudar a las personas a notar lugares, no a completar listas.\
+No se trata de ver m\'e1s.\
+Se trata de elegir mejor.\
+\
+Mini Tours no optimiza el viaje.\
+Lo afina.\
+\
+\
+PRINCIPIO RECTOR\
+\
+En Mini Tours no se empieza creando contenido.\
+Se empieza movi\'e9ndose y se\'f1alando el mundo.\
+\
+El usuario camina, observa y nota algo.\
+Puede decir:\
+- \'bfQu\'e9 es este lugar?\
+- Este lugar deber\'eda estar aqu\'ed\
+- Not my vibe\
+\
+Crear, editar y organizar no son tareas expl\'edcitas.\
+Son consecuencias naturales del movimiento y la curiosidad.\
+\
+\
+LENGUAJE OFICIAL DEL PRODUCTO\
+\
+Spot: un lugar se\'f1alado.\
+Path: un camino posible, una sugerencia.\
+Flow: el estado activo de movimiento.\
+Map: exploraci\'f3n libre y planeaci\'f3n.\
+Gems: lugares y paths que brillan ahora.\
+Saved: memoria personal.\
+Not my vibe: se\'f1al de afinidad negativa (no juicio).\
+Narration: acompa\'f1amiento emocional y contextual.\
+Search: b\'fasqueda contextual de Spots y Paths.\
+\
+\
+ENTIDADES DEL SISTEMA\
+\
+SPOT\
+\
+Un Spot es un lugar f\'edsico espec\'edfico que alguien not\'f3.\
+No es un listing.\
+No es contenido cerrado.\
+Es un punto de atenci\'f3n.\
+\
+Un Spot puede existir incompleto.\
+Puede ser creado por cualquier usuario.\
+Puede evolucionar con el tiempo.\
+\
+Atributos posibles:\
+- nombre (opcional)\
+- ubicaci\'f3n en mapa (ajustable)\
+- fotos\
+- descripci\'f3n breve (opcional)\
+- horarios (si aplica)\
+- costos (si aplica)\
+- tipo de lugar\
+\
+\
+CREACI\'d3N DE SPOT\
+\
+El usuario no entra a un formulario para crear un Spot.\
+Un Spot nace cuando el usuario camina o explora el mapa y decide se\'f1alar algo.\
+\
+Acciones:\
+- Mark this place\
+- Add spot\
+\
+El usuario puede:\
+- tomar una foto\
+- colocar o ajustar el pin\
+- escribir texto si quiere\
+- dejar campos vac\'edos\
+\
+Un Spot no necesita estar completo para existir.\
+\
+\
+ENRIQUECIMIENTO ASISTIDO\
+\
+Cuando un Spot est\'e1 incompleto, el sistema puede:\
+- investigar el lugar\
+- proponer nombre y descripci\'f3n\
+- sugerir horarios y costos\
+\
+El usuario puede aceptar, corregir o ignorar.\
+El usuario no es responsable editorial total.\
+\
+\
+AJUSTES Y CORRECCIONES\
+\
+Los usuarios pueden:\
+- ajustar la ubicaci\'f3n\
+- subir mejores fotos\
+- proponer correcciones\
+\
+Los cambios no se publican autom\'e1ticamente.\
+El sistema consolida y valida.\
+\
+\
+PATH\
+\
+Un Path es una sugerencia de recorrido.\
+No es una instrucci\'f3n.\
+No es una obligaci\'f3n.\
+\
+Un Path agrupa Spots y propone un orden y un ritmo.\
+Nunca exige completarse.\
+\
+\
+CREACI\'d3N DE PATH\
+\
+Un Path surge cuando:\
+- un usuario guarda varios Spots\
+- un usuario recorre Spots en cierto orden\
+- el sistema detecta un patr\'f3n \'fatil\
+- el usuario acepta la sugerencia\
+\
+\
+DATOS DE PATH\
+\
+Todo Path tiene:\
+- t\'edtulo sugerido (editable)\
+- descripci\'f3n breve generada\
+- duraci\'f3n estimada\
+- modo de movimiento (walking, bike, car)\
+- lista de Spots\
+\
+\
+PERSONALIZACI\'d3N DE PATH\
+\
+El usuario puede:\
+- reordenar Spots\
+- quitar o saltar Spots\
+- renombrar el Path\
+- guardar una versi\'f3n propia\
+\
+Editar un Path es ajustar la experiencia, no administrar contenido.\
+\
+\
+ARQUITECTURA GENERAL DE PANTALLAS\
+\
+Navegaci\'f3n principal (Tab Bar):\
+- Home\
+- Gems\
+- Saved\
+- Search\
+\
+Estados y overlays:\
+- Flow\
+- Spot Detail\
+\
+Acceso secundario:\
+- Profile (icono arriba a la derecha en Home y Saved)\
+\
+\
+HOME\
+\
+Home se divide en dos tabs internos.\
+\
+HOME \'b7 EXPLORE\
+Uso inmediato y contextual.\
+Muestra Spots cercanos y Paths sugeridos de forma secundaria.\
+Responde a: \'bfQu\'e9 puedo hacer aqu\'ed y ahora?\
+\
+HOME \'b7 MAP\
+Exploraci\'f3n libre y planeaci\'f3n.\
+Muestra Spots incluso lejanos.\
+Permite crear y ajustar Spots.\
+\
+\
+GEMS\
+\
+Gems muestra lo que est\'e1 brillando ahora.\
+Incluye Spots destacados, Spots recientes y Paths sugeridos.\
+El foco siempre est\'e1 en Spots, no en recorrer Paths completos.\
+\
+\
+SAVED\
+\
+Saved es la memoria personal del usuario.\
+Incluye:\
+- Spots guardados\
+- Spots que me gustaron\
+- Paths guardados\
+- Paths recorridos\
+- historial ligero\
+\
+Saved representa:\
+Esto es lo que not\'e9, recorr\'ed y me llev\'e9 conmigo.\
+\
+\
+SEARCH\
+\
+Search permite encontrar Spots y Paths.\
+La b\'fasqueda es contextual y adaptativa.\
+\
+\
+COMPORTAMIENTO DE B\'daSQUEDA\
+\
+La b\'fasqueda prioriza lugares cercanos.\
+Primero muestra resultados cercanos al usuario.\
+Luego expande a lugares m\'e1s lejanos si no hay suficientes resultados.\
+\
+El sistema muestra sugerencias mientras el usuario escribe.\
+Las sugerencias incluyen:\
+- Spots con nombres similares\
+- Paths que contienen Spots relacionados\
+- Lugares cercanos que coinciden con la b\'fasqueda\
+\
+\
+RESULTADOS Y SUGERENCIAS\
+\
+Los resultados se organizan por relevancia y cercan\'eda.\
+Se muestran sugerencias de:\
+- Spots similares\
+- Paths que incluyen Spots relacionados\
+- Lugares cercanos que pueden interesar\
+\
+Si no se encuentra lo que busca, el usuario puede crear un nuevo Spot desde la b\'fasqueda.\
+La creaci\'f3n sigue el flujo definido en CREACI\'d3N DE SPOT.\
+No requiere salir del contexto de b\'fasqueda.\
+\
+\
+UBICACI\'d3N Y ACCESO\
+\
+Search est\'e1 disponible en el Tab Bar principal.\
+Ocupa una posici\'f3n accesible para b\'fasqueda r\'e1pida.\
+El \'edcono de b\'fasqueda es claro y reconocible.\
+\
+\
+PROFILE\
+\
+Profile est\'e1 fuera del Tab Bar.\
+Contiene:\
+- preferencias\
+- idioma\
+- privacidad\
+- ajustes de audio\
+- opciones de cuenta\
+\
+No duplica contenido de Saved.\
+\
+\
+FLOW\
+\
+Flow es el estado activo de movimiento.\
+Cuando Flow est\'e1 activo, la interfaz baja el volumen y el mundo sube.\
+El Flow acompa\'f1a, no dirige.\
+\
+\
+--------------------------------------------------\
+\
+NARRACI\'d3N EN FLOW\
+Definici\'f3n Funcional\
+\
+La narraci\'f3n no es un audio-tour.\
+Es un sistema narrativo reactivo al movimiento.\
+\
+Su funci\'f3n es generar emoci\'f3n, contexto y presencia.\
+No explicar todo.\
+\
+\
+ACTIVACI\'d3N DE NARRACI\'d3N\
+\
+La narraci\'f3n se activa por eventos del Flow:\
+- aproximaci\'f3n a un Spot\
+- llegada a un Spot\
+- salida de un Spot\
+- trayectos entre Spots dentro de un Path\
+\
+\
+TIPOS DE NARRACI\'d3N\
+\
+ANTICIPACI\'d3N\
+Se activa antes de llegar al Spot.\
+Prepara la mirada.\
+Duraci\'f3n corta.\
+\
+PRESENCIA\
+Se activa al llegar.\
+Ancla al usuario en el momento.\
+Duraci\'f3n breve y evocadora.\
+\
+TRANSICI\'d3N\
+Se activa al salir.\
+Cierra sin romper el Flow.\
+\
+CONTEXTO DE PATH\
+Aparece entre Spots.\
+Da coherencia emocional al recorrido.\
+Nunca constante.\
+\
+\
+REGLAS DE NARRACI\'d3N\
+\
+- Nunca se superponen audios.\
+- Nunca se repite la misma narraci\'f3n.\
+- Nunca se activa si el usuario va muy r\'e1pido.\
+- Nunca obliga a escuchar.\
+- Siempre se puede silenciar.\
+- El silencio tambi\'e9n es dise\'f1o.\
+\
+\
+NARRACI\'d3N Y AFINIDAD\
+\
+Las se\'f1ales del usuario influyen en la narraci\'f3n.\
+- Likes refuerzan cierto tono.\
+- Not my vibe reduce narraciones similares.\
+\
+La narraci\'f3n se adapta sin fricci\'f3n.\
+\
+\
+IDIOMA\
+\
+La narraci\'f3n es multi-idioma por dise\'f1o.\
+Puede traducirse o localizarse.\
+Debe sentirse nativa, no literal.\
+\
+\
+--------------------------------------------------\
+\
+MINI TOURS\
+Design Rules & UI Constraints (para Cursor)\
+\
+ESPACIADO\
+\
+Sistema base 8px.\
+Solo se permiten m\'faltiplos definidos.\
+El espacio es parte del tono emocional.\
+\
+\
+LAYOUT\
+\
+Mobile-first.\
+Columna \'fanica.\
+Scroll natural.\
+No layouts densos.\
+No tablas.\
+No m\'faltiples columnas simult\'e1neas.\
+\
+\
+BLUR Y MATERIALES\
+\
+Uso de blur tipo Apple.\
+Permitido en:\
+- top bars\
+- bottom bars\
+- overlays\
+- drawers\
+\
+No usar blur decorativo.\
+El blur reduce ruido, no llama la atenci\'f3n.\
+\
+\
+CAPAS Y JERARQU\'cdA\
+\
+La profundidad se comunica con:\
+- blur\
+- movimiento\
+- elevaci\'f3n suave\
+\
+No usar bordes visibles.\
+No usar sombras duras.\
+\
+\
+TIPOGRAF\'cdA\
+\
+Usar Inter como \'fanica tipograf\'eda.\
+Priorizar legibilidad.\
+Frases cortas.\
+No justificar texto.\
+Pocos tama\'f1os bien definidos.\
+\
+\
+ICONOGRAF\'cdA\
+\
+Usar Lucide Icons como \'fanica librer\'eda.\
+Iconos lineales y minimalistas.\
+No mezclar librer\'edas.\
+Usar nombres sem\'e1nticos.\
+Los iconos nunca son protagonistas.\
+\
+\
+\'c1REAS T\'c1CTILES\
+\
+Todos los elementos accionables deben tener \'e1reas c\'f3modas.\
+\'c1rea m\'ednima tocable: 48px x 48px.\
+Evitar interacciones de precisi\'f3n.\
+La interfaz debe poder usarse caminando.\
+\
+\
+MOVIMIENTO\
+\
+Animaciones suaves y cortas.\
+Sin rebotes.\
+El movimiento acompa\'f1a, no presume.\
+\
+\
+ESTADOS\
+\
+Toda pantalla debe contemplar:\
+- estado vac\'edo\
+- estado cargando\
+- estado activo\
+\
+Evitar loaders agresivos.\
+Preferir silencios o skeletons.\
+\
+\
+PRINCIPIO VISUAL FINAL\
+\
+La interfaz nunca debe competir con el lugar.\
+Debe sentirse calma, presente y casi invisible.\
+}
