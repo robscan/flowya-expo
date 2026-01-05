@@ -3,59 +3,136 @@
  * Scope 11: Saved Screen - Memoria personal del usuario
  * 
  * Principios de diseño:
- * - Header: "Saved" con subtítulo "Your personal collection"
- * - Tabs internos: Paths, Liked
- * - Spots guardados, Spots con 👍, Paths guardados, Paths recorridos
- * - Timeline ligero de actividad
+ * - Header scrollable (igual que Home)
+ * - Dos tabs internos: "Saved" e "History"
+ * - Tab "Saved": Sliders horizontales de spots y paths guardados
+ * - Tab "History": Lista vertical de items visitados sin guardar
  * - Cards con estilo glass
  */
 
-import { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
+import * as Location from 'expo-location';
 
 import { Colors } from '@/constants/theme';
 import { spacing } from '@/constants/spacing';
-import { textStyles } from '@/constants/typography';
+import { textStyles, fontSize, lineHeight, fontFamilyMedium } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { GlassView } from '@/components/ui/GlassView';
 import { Icon } from '@/components/ui/Icon';
 import { iconTouchableContainer } from '@/components/ui/Icon';
-import { SavedSpotList } from '@/components/SavedSpotList';
-import { SavedPathList } from '@/components/SavedPathList';
-import { ActivityTimeline } from '@/components/ActivityTimeline';
-import { SpotDetailSheet } from '@/components/SpotDetailSheet';
+import { SpotCard } from '@/components/SpotCard';
+import { FlowCard } from '@/components/FlowCard';
 import { useSpot } from '@/contexts/SpotContext';
 import { usePath } from '@/contexts/PathContext';
 import { useSaved } from '@/contexts/SavedContext';
 import { useFlow } from '@/contexts/FlowContext';
+import { useOverlay } from '@/contexts/OverlayContext';
 import { Spot } from '@/data/spots';
-import { Path } from '@/data/paths';
+import { Flow } from '@/data/flows';
+import { calculateDistanceToSpot } from '@/utils/distance';
+import { TimelineEntry } from '@/contexts/SavedContext';
 
-type SavedTab = 'paths' | 'liked' | 'timeline';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.75, 400); // 75% of screen width, max 400px for desktop
+
+type SavedTab = 'saved' | 'history';
 
 export default function SavedScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const navigation = useNavigation();
+  const { setIsTabBarLabelsVisible } = useOverlay();
   const colors = Colors[colorScheme ?? 'light'];
-  const [activeTab, setActiveTab] = useState<SavedTab>('paths');
-  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-  const [isDetailSheetVisible, setIsDetailSheetVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<SavedTab>('saved');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const lastScrollY = useRef(0);
+  const isLabelsVisible = useRef(true);
 
-  const { spots, isLoading: spotsLoading, getSpotById } = useSpot();
-  const { paths, isLoading: pathsLoading, getPathById } = usePath();
-  const { savedSpots, likedSpots, savedPaths, visitedPaths, timeline, isLoading: savedLoading } = useSaved();
+  const { spots, isLoading: spotsLoading } = useSpot();
+  const { paths, isLoading: pathsLoading } = usePath();
+  const { savedSpots, savedPaths, timeline, isLoading: savedLoading } = useSaved();
   const { startFlow } = useFlow();
 
   const isLoading = spotsLoading || pathsLoading || savedLoading;
 
-  // Obtener spots guardados y con like
+  // Enable LayoutAnimation on Android
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  // Handle scroll to show/hide tab bar labels
+  const handleScroll = (event: any) => {
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+    const scrollDifference = 10; // Threshold for scroll detection
+
+    if (currentScrollY > lastScrollY.current + scrollDifference && isLabelsVisible.current) {
+      // Scrolling down - hide labels
+      isLabelsVisible.current = false;
+      LayoutAnimation.configureNext({
+        duration: 300,
+        create: { type: 'easeInEaseOut', property: 'opacity' },
+        update: { type: 'easeInEaseOut', property: 'opacity' },
+        delete: { type: 'easeInEaseOut', property: 'opacity' },
+      });
+      setIsTabBarLabelsVisible(false);
+      navigation.setOptions({
+        tabBarShowLabel: false,
+      });
+    } else if (currentScrollY < lastScrollY.current - scrollDifference && !isLabelsVisible.current) {
+      // Scrolling up - show labels
+      isLabelsVisible.current = true;
+      LayoutAnimation.configureNext({
+        duration: 300,
+        create: { type: 'easeInEaseOut', property: 'opacity' },
+        update: { type: 'easeInEaseOut', property: 'opacity' },
+        delete: { type: 'easeInEaseOut', property: 'opacity' },
+      });
+      setIsTabBarLabelsVisible(true);
+      navigation.setOptions({
+        tabBarShowLabel: true,
+      });
+    }
+
+    lastScrollY.current = currentScrollY;
+  };
+
+  // Get user location
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Location permissions denied');
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } catch (error) {
+        console.error('Error getting location:', error);
+      }
+    })();
+  }, []);
+
+  // Obtener spots y paths guardados
   const savedSpotsData = spots.filter((spot) => savedSpots.includes(spot.id));
-  const likedSpotsData = spots.filter((spot) => likedSpots.includes(spot.id));
-  
-  // Obtener paths guardados y visitados
   const savedPathsData = paths.filter((path) => savedPaths.includes(path.id));
-  const visitedPathsData = paths.filter((path) => visitedPaths.includes(path.id));
+
+  // Filtrar timeline para History: solo visited que no están guardados
+  const historyEntries = timeline.filter((entry) => {
+    if (entry.action !== 'visited') return false;
+    if (entry.type === 'spot') {
+      return !savedSpots.includes(entry.itemId);
+    } else {
+      return !savedPaths.includes(entry.itemId);
+    }
+  });
 
   // Header con icono Profile
   const handleProfilePress = () => {
@@ -64,95 +141,184 @@ export default function SavedScreen() {
 
   // Manejar selección de Spot
   const handleSpotPress = (spot: Spot) => {
-    setSelectedSpot(spot);
-    setIsDetailSheetVisible(true);
+    router.push(`/spot-detail?id=${spot.id}`);
   };
 
-  const handleCloseDetailSheet = () => {
-    setIsDetailSheetVisible(false);
-    setSelectedSpot(null);
+  // Render horizontal slider of spots
+  const renderSpotSlider = (title: string, spots: Spot[]) => {
+    if (spots.length === 0) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+        <FlatList
+          data={spots}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sliderContent}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: spot }) => {
+            const distance = calculateDistanceToSpot(userLocation, spot.location);
+            return (
+              <View style={[styles.sliderCard, { width: CARD_WIDTH }]}>
+                <SpotCard
+                  spot={spot}
+                  distance={distance || undefined}
+                  onPress={() => handleSpotPress(spot)}
+                  onMapPress={() => handleSpotPress(spot)}
+                  inSlider={true}
+                />
+              </View>
+            );
+          }}
+          snapToInterval={CARD_WIDTH + spacing.sm}
+          decelerationRate="fast"
+          pagingEnabled={false}
+        />
+      </View>
+    );
   };
 
-  // Manejar selección de Path
-  const handlePathPress = (path: Path) => {
-    // Navegar a detalles del path o iniciar flow
-    // Por ahora, iniciar flow directamente
-    startFlow(path.id);
+  // Render horizontal slider of paths
+  const renderPathSlider = (title: string, paths: Flow[]) => {
+    if (paths.length === 0) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+        <FlatList
+          data={paths}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sliderContent}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: path }) => {
+            const distance = calculateDistanceToSpot(
+              userLocation,
+              spots.find((s) => s.id === path.spots[0])?.location || { latitude: 0, longitude: 0 }
+            );
+            return (
+              <View style={[styles.sliderCard, { width: CARD_WIDTH }]}>
+                <FlowCard
+                  flow={path}
+                  spots={spots}
+                  distance={distance || undefined}
+                  onPress={() => startFlow(path.id)}
+                />
+              </View>
+            );
+          }}
+          snapToInterval={CARD_WIDTH + spacing.sm}
+          decelerationRate="fast"
+          pagingEnabled={false}
+        />
+      </View>
+    );
   };
 
-  const handleStartPath = (path: Path) => {
-    startFlow(path.id);
+  // Render history list
+  const renderHistory = () => {
+    return (
+      <View style={styles.pathsList}>
+        {historyEntries.map((entry) => {
+          if (entry.type === 'spot') {
+            const spot = spots.find((s) => s.id === entry.itemId);
+            if (!spot) return null;
+            const distance = calculateDistanceToSpot(userLocation, spot.location);
+            return (
+              <SpotCard
+                key={entry.id}
+                spot={spot}
+                distance={distance || undefined}
+                onPress={() => handleSpotPress(spot)}
+                onMapPress={() => handleSpotPress(spot)}
+              />
+            );
+          } else {
+            const path = paths.find((p) => p.id === entry.itemId);
+            if (!path) return null;
+            const distance = calculateDistanceToSpot(
+              userLocation,
+              spots.find((s) => s.id === path.spots[0])?.location || { latitude: 0, longitude: 0 }
+            );
+            return (
+              <FlowCard
+                key={entry.id}
+                flow={path}
+                spots={spots}
+                distance={distance || undefined}
+                onPress={() => startFlow(path.id)}
+              />
+            );
+          }
+        })}
+      </View>
+    );
   };
 
-  // Renderizar contenido según tab activo
+  // Render empty state for Saved tab
+  const renderSavedEmptyState = () => {
+    if (savedSpotsData.length > 0 || savedPathsData.length > 0) return null;
+
+    return (
+      <View style={styles.emptyState}>
+        <Icon name="bookmark" size={48} color={colors.icon} />
+        <Text style={[textStyles.heading4, { color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs }]}>
+          No saved items yet
+        </Text>
+        <Text style={[textStyles.body, { color: colors.icon, marginBottom: spacing.lg, textAlign: 'center' }]}>
+          Start exploring and save spots and paths you want to visit later
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/home')}
+          style={[styles.emptyStateButton, { backgroundColor: colors.tint }]}
+          activeOpacity={0.8}>
+          <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>Explore Home</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Render content based on active tab
   const renderContent = () => {
-    if (activeTab === 'paths') {
+    if (activeTab === 'saved') {
+      const hasContent = savedSpotsData.length > 0 || savedPathsData.length > 0;
       return (
-        <>
-          <View style={styles.section}>
-            <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.md }]}>
-              Paths guardados
-            </Text>
-            <SavedPathList
-              paths={savedPathsData}
-              allSpots={spots}
-              onPathPress={handlePathPress}
-              onStartPath={handleStartPath}
-              emptyMessage="No hay paths guardados"
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.md }]}>
-              Paths recorridos
-            </Text>
-            <SavedPathList
-              paths={visitedPathsData}
-              allSpots={spots}
-              onPathPress={handlePathPress}
-              onStartPath={handleStartPath}
-              emptyMessage="No hay paths recorridos"
-            />
-          </View>
-        </>
+        <View style={styles.savedContent}>
+          {hasContent ? (
+            <>
+              {renderSpotSlider('Saved - Spots', savedSpotsData)}
+              {renderPathSlider('Saved - Paths', savedPathsData)}
+            </>
+          ) : (
+            renderSavedEmptyState()
+          )}
+        </View>
       );
     }
 
-    if (activeTab === 'liked') {
+    if (activeTab === 'history') {
       return (
-        <>
-          <View style={styles.section}>
-            <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.md }]}>
-              Spots guardados
-            </Text>
-            <SavedSpotList
-              spots={savedSpotsData}
-              onSpotPress={handleSpotPress}
-              emptyMessage="No hay spots guardados"
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.md }]}>
-              Spots que me gustaron 👍
-            </Text>
-            <SavedSpotList
-              spots={likedSpotsData}
-              onSpotPress={handleSpotPress}
-              emptyMessage="No hay spots con like"
-            />
-          </View>
-        </>
-      );
-    }
-
-    if (activeTab === 'timeline') {
-      return (
-        <View style={styles.section}>
-          <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.md }]}>
-            Actividad reciente
-          </Text>
-          <ActivityTimeline entries={timeline} limit={20} />
+        <View style={styles.historyContent}>
+          {historyEntries.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Icon name="clock" size={48} color={colors.icon} />
+              <Text style={[textStyles.heading4, { color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs }]}>
+                No history yet
+              </Text>
+              <Text style={[textStyles.body, { color: colors.icon, marginBottom: spacing.lg, textAlign: 'center' }]}>
+                Start a flow and visit spots to see your navigation history here
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/home')}
+                style={[styles.emptyStateButton, { backgroundColor: colors.tint }]}
+                activeOpacity={0.8}>
+                <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>Explore Home</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            renderHistory()
+          )}
         </View>
       );
     }
@@ -162,100 +328,86 @@ export default function SavedScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header con estilo glass */}
-      <GlassView style={styles.header} intensity="light" opacity="medium">
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={[textStyles.heading3, { color: colors.text }]}>Saved</Text>
-            <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
-              Your personal collection
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={handleProfilePress}
-            style={iconTouchableContainer.base}
-            activeOpacity={0.7}>
-            <Icon name="profile" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-      </GlassView>
-
-      {/* Tabs internos */}
-      <View
-        style={[
-          styles.tabsContainer,
-          {
-            borderBottomColor:
-              colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-          },
-        ]}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'paths' && styles.tabActive,
-            activeTab === 'paths' && { borderBottomColor: colors.tint },
-          ]}
-          onPress={() => setActiveTab('paths')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              textStyles.bodyMedium,
-              { color: activeTab === 'paths' ? colors.tint : colors.icon },
-            ]}>
-            Paths
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'liked' && styles.tabActive,
-            activeTab === 'liked' && { borderBottomColor: colors.tint },
-          ]}
-          onPress={() => setActiveTab('liked')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              textStyles.bodyMedium,
-              { color: activeTab === 'liked' ? colors.tint : colors.icon },
-            ]}>
-            Liked
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'timeline' && styles.tabActive,
-            activeTab === 'timeline' && { borderBottomColor: colors.tint },
-          ]}
-          onPress={() => setActiveTab('timeline')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              textStyles.bodyMedium,
-              { color: activeTab === 'timeline' ? colors.tint : colors.icon },
-            ]}>
-            Timeline
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Contenido */}
       {isLoading ? (
         <View style={styles.loadingState}>
-          <Text style={[textStyles.body, { color: colors.icon }]}>Cargando...</Text>
+          <Text style={[textStyles.body, { color: colors.icon }]}>Loading...</Text>
         </View>
       ) : (
-        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}>
+          {/* Header inside ScrollView (scrolls) */}
+          <View
+            style={[
+              styles.header,
+              {
+                borderBottomColor:
+                  colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              },
+            ]}>
+            <View style={styles.headerContent}>
+              <Text style={[textStyles.heading3, { color: colors.text }]}>Saved</Text>
+              <TouchableOpacity
+                onPress={handleProfilePress}
+                style={iconTouchableContainer.base}
+                activeOpacity={0.7}>
+                <Icon name="profile" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Tabs internos */}
+          <View
+            style={[
+              styles.tabsContainer,
+              {
+                borderBottomColor:
+                  colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              },
+            ]}>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'saved' && styles.tabActive,
+                activeTab === 'saved' && { borderBottomColor: colors.tint },
+              ]}
+              onPress={() => setActiveTab('saved')}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  textStyles.bodyMedium,
+                  { color: activeTab === 'saved' ? colors.tint : colors.icon },
+                ]}>
+                Saved
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'history' && styles.tabActive,
+                activeTab === 'history' && { borderBottomColor: colors.tint },
+              ]}
+              onPress={() => setActiveTab('history')}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  textStyles.bodyMedium,
+                  { color: activeTab === 'history' ? colors.tint : colors.icon },
+                ]}>
+                History
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
           {renderContent()}
         </ScrollView>
       )}
 
       {/* Spot Detail Sheet */}
-      <SpotDetailSheet
-        spot={selectedSpot}
-        visible={isDetailSheetVisible}
-        onClose={handleCloseDetailSheet}
-      />
     </View>
   );
 }
@@ -269,7 +421,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     paddingHorizontal: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginBottom: spacing.sm,
   },
   headerContent: {
     flexDirection: 'row',
@@ -280,6 +432,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
   },
   tab: {
     paddingVertical: spacing.sm,
@@ -295,10 +448,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  savedContent: {
+    // No paddingHorizontal - se aplica en sectionTitle, sliderContent y pathsList
+  },
+  historyContent: {
+    // No paddingHorizontal - se aplica en sectionTitle y pathsList
   },
   section: {
     marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    fontFamily: fontFamilyMedium,
+    fontSize: fontSize.xl,
+    lineHeight: lineHeight.xl,
+    fontWeight: '600',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  sliderContent: {
+    paddingHorizontal: spacing.md,
+    paddingRight: spacing.lg,
+  },
+  sliderCard: {
+    marginRight: spacing.sm, // 16px
+  },
+  pathsList: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm, // 16px
+  },
+  emptyState: {
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 300,
+  },
+  emptyStateButton: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingState: {
     flex: 1,

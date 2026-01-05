@@ -2,23 +2,24 @@
  * Search Result Card Component
  * Scope 10: Search Screen - Card para resultados
  * 
- * Reutiliza SpotCard o variante para resultados de búsqueda
+ * Reutiliza SpotCard o PathCard para resultados de búsqueda
  */
 
 import React from 'react';
 
 import { SearchResult } from '@/utils/searchLogic';
 import { SpotCard } from '@/components/SpotCard';
-import { GemsPathCard } from '@/components/GemsPathCard';
-import { GemPath } from '@/utils/gemsLogic';
+import { FlowCard } from '@/components/FlowCard';
+import { Spot } from '@/data/spots';
 
 interface SearchResultCardProps {
   result: SearchResult;
+  allSpots: Spot[]; // Array completo de spots para PathCard
   onSpotPress?: (spotId: string) => void;
   onPathPress?: (pathId: string) => void;
 }
 
-export function SearchResultCard({ result, onSpotPress, onPathPress }: SearchResultCardProps) {
+export function SearchResultCard({ result, allSpots, onSpotPress, onPathPress }: SearchResultCardProps) {
   if (result.type === 'spot' && result.spot) {
     return (
       <SpotCard
@@ -29,14 +30,10 @@ export function SearchResultCard({ result, onSpotPress, onPathPress }: SearchRes
   }
   
   if (result.type === 'path' && result.path) {
-    const gemPath: GemPath = {
-      path: result.path,
-      reason: 'suggested',
-      score: result.relevanceScore,
-    };
     return (
-      <GemsPathCard
-        gemPath={gemPath}
+      <FlowCard
+        flow={result.path}
+        spots={allSpots}
         onPress={() => onPathPress?.(result.path!.id)}
       />
     );
@@ -44,4 +41,3 @@ export function SearchResultCard({ result, onSpotPress, onPathPress }: SearchRes
   
   return null;
 }
-

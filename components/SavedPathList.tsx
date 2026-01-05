@@ -11,7 +11,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
-import { Path, getPathSpots } from '@/data/paths';
+import { Flow, getFlowSpots } from '@/data/flows';
 import { Spot } from '@/data/spots';
 import { spacing } from '@/constants/spacing';
 import { textStyles } from '@/constants/typography';
@@ -22,10 +22,10 @@ import { Icon } from '@/components/ui/Icon';
 import { iconTouchableContainer } from '@/components/ui/Icon';
 
 interface SavedPathListProps {
-  paths: Path[];
+  paths: Flow[];
   allSpots: Spot[];
-  onPathPress: (path: Path) => void;
-  onStartPath?: (path: Path) => void;
+  onPathPress: (path: Flow) => void;
+  onStartPath?: (path: Flow) => void;
   emptyMessage?: string;
 }
 
@@ -41,14 +41,6 @@ function formatDuration(minutes: number): string {
   return `${hours}h ${mins}m`;
 }
 
-function getMovementModeLabel(mode: Path['movementMode']): string {
-  const labels: Record<Path['movementMode'], string> = {
-    walking: 'Caminando',
-    bike: 'En bici',
-    car: 'En auto',
-  };
-  return labels[mode];
-}
 
 export function SavedPathList({
   paths,
@@ -71,7 +63,7 @@ export function SavedPathList({
   return (
     <View style={styles.container}>
       {paths.map((path) => {
-        const pathSpots = getPathSpots(path, allSpots);
+        const pathSpots = getFlowSpots(path, allSpots);
         
         return (
           <GlassView key={path.id} style={styles.card} intensity="medium" opacity="medium">

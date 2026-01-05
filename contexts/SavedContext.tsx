@@ -27,32 +27,48 @@ export interface TimelineEntry {
 
 interface SavedData {
   likedSpots: string[]; // Spot IDs
+  likedSpotsFromPlayer: string[]; // Spot IDs - likes hechos desde el player durante navegación
   notMyVibeSpots: string[]; // Spot IDs
   savedSpots: string[]; // Spot IDs
-  savedPaths: string[]; // Path IDs
-  visitedPaths: string[]; // Path IDs
+  savedFlows: string[]; // Flow IDs (anteriormente savedPaths)
+  visitedFlows: string[]; // Flow IDs (anteriormente visitedPaths)
   timeline: TimelineEntry[];
+  // Aliases para compatibilidad temporal
+  savedPaths: string[];
+  visitedPaths: string[];
 }
 
 interface SavedContextType {
   // Spots
   likedSpots: string[];
+  likedSpotsFromPlayer: string[]; // Likes hechos desde el player durante navegación
   notMyVibeSpots: string[];
   savedSpots: string[];
-  // Paths
+  // Flows (anteriormente Paths)
+  savedFlows: string[];
+  visitedFlows: string[];
+  // Aliases para compatibilidad temporal
   savedPaths: string[];
   visitedPaths: string[];
   // Timeline
   timeline: TimelineEntry[];
   // Actions
   toggleLikeSpot: (spotId: string) => void;
+  toggleLikeSpotFromPlayer: (spotId: string) => void; // Like desde el player
   toggleNotMyVibeSpot: (spotId: string) => void;
   toggleSaveSpot: (spotId: string) => void;
+  toggleSaveFlow: (flowId: string) => void;
+  markFlowVisited: (flowId: string) => void;
+  // Aliases para compatibilidad temporal
   toggleSavePath: (pathId: string) => void;
   markPathVisited: (pathId: string) => void;
   isSpotLiked: (spotId: string) => boolean;
+  isSpotLikedFromPlayer: (spotId: string) => boolean; // Verificar si está liked desde player
   isSpotNotMyVibe: (spotId: string) => boolean;
   isSpotSaved: (spotId: string) => boolean;
+  isFlowSaved: (flowId: string) => boolean;
+  isFlowVisited: (flowId: string) => boolean;
+  // Aliases para compatibilidad temporal
   isPathSaved: (pathId: string) => boolean;
   isPathVisited: (pathId: string) => boolean;
   // Loading
@@ -63,11 +79,15 @@ const SavedContext = createContext<SavedContextType | undefined>(undefined);
 
 const defaultData: SavedData = {
   likedSpots: [],
+  likedSpotsFromPlayer: [],
   notMyVibeSpots: [],
   savedSpots: [],
+  savedFlows: [],
+  visitedFlows: [],
+  timeline: [],
+  // Aliases para compatibilidad
   savedPaths: [],
   visitedPaths: [],
-  timeline: [],
 };
 
 export function SavedProvider({ children }: { children: ReactNode }) {
@@ -96,6 +116,20 @@ export function SavedProvider({ children }: { children: ReactNode }) {
           ...entry,
           timestamp: new Date(entry.timestamp),
         }));
+        // Migración: si tiene savedPaths/visitedPaths pero no savedFlows/visitedFlows, copiar
+        if (parsed.savedPaths && !parsed.savedFlows) {
+          parsed.savedFlows = parsed.savedPaths;
+        }
+        if (parsed.visitedPaths && !parsed.visitedFlows) {
+          parsed.visitedFlows = parsed.visitedPaths;
+        }
+        // Asegurar que los aliases estén sincronizados
+        if (parsed.savedFlows) {
+          parsed.savedPaths = parsed.savedFlows;
+        }
+        if (parsed.visitedFlows) {
+          parsed.visitedPaths = parsed.visitedFlows;
+        }
         setData(parsed);
       }
     } catch (error) {
@@ -154,6 +188,23 @@ export function SavedProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const toggleLikeSpotFromPlayer = (spotId: string) => {
+    setData((prev) => {
+      const isLiked = prev.likedSpotsFromPlayer.includes(spotId);
+      const newLikedSpotsFromPlayer = isLiked
+        ? prev.likedSpotsFromPlayer.filter((id) => id !== spotId)
+        : [...prev.likedSpotsFromPlayer, spotId];
+
+      // También agregar/quitar del timeline
+      addToTimeline('spot', 'like', spotId);
+
+      return {
+        ...prev,
+        likedSpotsFromPlayer: newLikedSpotsFromPlayer,
+      };
+    });
+  };
+
   const toggleNotMyVibeSpot = (spotId: string) => {
     setData((prev) => {
       const isNotMyVibe = prev.notMyVibeSpots.includes(spotId);
@@ -192,56 +243,79 @@ export function SavedProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const toggleSavePath = (pathId: string) => {
+  const toggleSaveFlow = (flowId: string) => {
     setData((prev) => {
-      const isSaved = prev.savedPaths.includes(pathId);
-      const newSavedPaths = isSaved
-        ? prev.savedPaths.filter((id) => id !== pathId)
-        : [...prev.savedPaths, pathId];
+      const isSaved = prev.savedFlows.includes(flowId);
+      const newSavedFlows = isSaved
+        ? prev.savedFlows.filter((id) => id !== flowId)
+        : [...prev.savedFlows, flowId];
 
-      addToTimeline('path', 'saved', pathId);
+      addToTimeline('path', 'saved', flowId);
 
       return {
         ...prev,
-        savedPaths: newSavedPaths,
+        savedFlows: newSavedFlows,
+        savedPaths: newSavedFlows, // Sincronizar con alias
       };
     });
   };
 
-  const markPathVisited = (pathId: string) => {
+  const markFlowVisited = (flowId: string) => {
     setData((prev) => {
-      if (!prev.visitedPaths.includes(pathId)) {
-        addToTimeline('path', 'visited', pathId);
+      if (!prev.visitedFlows.includes(flowId)) {
+        addToTimeline('path', 'visited', flowId);
+        const newVisitedFlows = [...prev.visitedFlows, flowId];
         return {
           ...prev,
-          visitedPaths: [...prev.visitedPaths, pathId],
+          visitedFlows: newVisitedFlows,
+          visitedPaths: newVisitedFlows, // Sincronizar con alias
         };
       }
       return prev;
     });
   };
 
+  // Aliases para compatibilidad temporal
+  const toggleSavePath = toggleSaveFlow;
+  const markPathVisited = markFlowVisited;
+
   const isSpotLiked = (spotId: string) => data.likedSpots.includes(spotId);
+  const isSpotLikedFromPlayer = (spotId: string) => data.likedSpotsFromPlayer.includes(spotId);
   const isSpotNotMyVibe = (spotId: string) => data.notMyVibeSpots.includes(spotId);
   const isSpotSaved = (spotId: string) => data.savedSpots.includes(spotId);
-  const isPathSaved = (pathId: string) => data.savedPaths.includes(pathId);
-  const isPathVisited = (pathId: string) => data.visitedPaths.includes(pathId);
+  const isFlowSaved = (flowId: string) => data.savedFlows.includes(flowId);
+  const isFlowVisited = (flowId: string) => data.visitedFlows.includes(flowId);
+  // Aliases para compatibilidad
+  const isPathSaved = isFlowSaved;
+  const isPathVisited = isFlowVisited;
 
   const value: SavedContextType = {
     likedSpots: data.likedSpots,
+    likedSpotsFromPlayer: data.likedSpotsFromPlayer,
     notMyVibeSpots: data.notMyVibeSpots,
     savedSpots: data.savedSpots,
-    savedPaths: data.savedPaths,
-    visitedPaths: data.visitedPaths,
+    savedFlows: data.savedFlows,
+    visitedFlows: data.visitedFlows,
     timeline: data.timeline,
+    // Aliases para compatibilidad
+    savedPaths: data.savedFlows,
+    visitedPaths: data.visitedFlows,
     toggleLikeSpot,
+    toggleLikeSpotFromPlayer,
     toggleNotMyVibeSpot,
     toggleSaveSpot,
+    toggleSaveFlow,
+    markFlowVisited,
+    // Aliases para compatibilidad
     toggleSavePath,
     markPathVisited,
     isSpotLiked,
+    isSpotLikedFromPlayer,
     isSpotNotMyVibe,
     isSpotSaved,
+    isFlowSaved,
+    isFlowVisited,
+    // Aliases para compatibilidad
     isPathSaved,
     isPathVisited,
     isLoading,

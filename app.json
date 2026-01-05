@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mini-tours-expo",
-    "slug": "mini-tours-expo",
+    "name": "flowya",
+    "slug": "flowya",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "minitoursexpo",
+    "scheme": "flowya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

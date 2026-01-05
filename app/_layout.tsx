@@ -14,8 +14,10 @@ import { SpotProvider } from '@/contexts/SpotContext';
 import { PathProvider } from '@/contexts/PathContext';
 import { FlowProvider } from '@/contexts/FlowContext';
 import { NarrationProvider } from '@/contexts/NarrationContext';
+import { OverlayProvider } from '@/contexts/OverlayContext';
 import { NarrationController } from '@/components/NarrationController';
 import { FlowScreen } from '@/components/FlowScreen';
+import { FlowMiniPlayer } from '@/components/FlowMiniPlayer';
 
 // Mantener la splash screen visible mientras cargan las fuentes
 SplashScreen.preventAutoHideAsync();
@@ -55,17 +57,23 @@ export default function RootLayout() {
           <FlowProvider>
             <NarrationProvider>
               <SavedProvider>
-                <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                  <View style={styles.container}>
-                    <Stack>
-                      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                    </Stack>
-                    <StatusBar style="auto" />
-                    <NarrationController />
-                    <FlowScreen />
-                  </View>
-                </ThemeProvider>
+                <OverlayProvider>
+                  <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                    <View style={styles.container}>
+                      <Stack>
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                        <Stack.Screen name="liked-spots" options={{ presentation: 'modal', title: 'Liked Spots', headerShown: false }} />
+                        <Stack.Screen name="spot-detail" options={{ presentation: 'card', headerShown: false }} />
+                        <Stack.Screen name="flow-full-player" options={{ presentation: 'card', headerShown: false }} />
+                      </Stack>
+                      <StatusBar style="auto" />
+                      <NarrationController />
+                      <FlowScreen />
+                      <FlowMiniPlayer />
+                    </View>
+                  </ThemeProvider>
+                </OverlayProvider>
               </SavedProvider>
             </NarrationProvider>
           </FlowProvider>

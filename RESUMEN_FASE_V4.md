@@ -1,4 +1,6 @@
-# Resumen Fase V4 - Mini Tours MVP
+# Resumen Fase V4 - FLOWYA MVP
+
+**Nota histórica:** Este documento corresponde al trabajo realizado cuando el proyecto se llamaba "Mini Tours". El proyecto ahora se llama FLOWYA, pero el trabajo realizado sigue siendo válido.
 
 **Fecha de finalización:** 2024-12-19  
 **Estado:** ✅ COMPLETADO

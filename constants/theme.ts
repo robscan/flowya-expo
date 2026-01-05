@@ -3,8 +3,10 @@
  * Colores y configuración base del tema
  */
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Magenta vibrante para ambos modos - transmite flow, dinamismo y exploración
+// Verificado para accesibilidad: contraste suficiente en light (#fff) y dark (#151718)
+const tintColorLight = '#E91E63';
+const tintColorDark = '#E91E63';
 
 export const Colors = {
   light: {

@@ -27,12 +27,14 @@ import {
   Modal,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { useFlow } from '@/contexts/FlowContext';
 import { usePath } from '@/contexts/PathContext';
 import { useSpot } from '@/contexts/SpotContext';
+import { useSaved } from '@/contexts/SavedContext';
 import { useNarrationTriggers } from '@/components/NarrationController';
 import { geofencingSimulator } from '@/utils/geofencingSimulator';
 import { Colors } from '@/constants/theme';
@@ -42,9 +44,11 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GlassView } from '@/components/ui/GlassView';
 import { Icon } from '@/components/ui/Icon';
 import { iconTouchableContainer } from '@/components/ui/Icon';
-import { SpotCard } from '@/components/SpotCard';
-import { FlowFullPlayer } from '@/components/FlowFullPlayer';
-import { getPathSpots } from '@/data/paths';
+import { SpotCardCompact } from '@/components/SpotCardCompact';
+import { FlowSpotCard } from '@/components/FlowSpotCard';
+import { getFlowSpots } from '@/data/flows';
+import * as Location from 'expo-location';
+import { calculateDistanceToSpot } from '@/utils/distance';
 
 type FlowViewMode = 'list' | 'map';
 
@@ -52,18 +56,19 @@ export function FlowScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
-  const { flowState, currentSpotId, nextSpotId, progress, pauseFlow, resumeFlow, endFlow, nextSpot } = useFlow();
-  const { getPathById } = usePath();
+  const { flowState, currentSpotId, nextSpotId, progress, pauseFlow, resumeFlow, endFlow, minimizeFlow, nextSpot } = useFlow();
+  const { getFlowById } = usePath();
   const { spots, getSpotById } = useSpot();
+  const { isSpotLikedFromPlayer, toggleLikeSpotFromPlayer, toggleSaveFlow } = useSaved();
   const narrationTriggers = useNarrationTriggers();
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   
   const [viewMode, setViewMode] = useState<FlowViewMode>('list');
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [isFullPlayerVisible, setIsFullPlayerVisible] = useState(false);
 
-  const isVisible = flowState.status === 'active' || flowState.status === 'paused';
-  const path = flowState.currentPathId ? getPathById(flowState.currentPathId) : null;
-  const pathSpots = path ? getPathSpots(path, spots) : [];
+  const isVisible = (flowState.status === 'active' || flowState.status === 'paused') && !flowState.isMinimized;
+  const flow = flowState.currentPathId ? getFlowById(flowState.currentPathId) : null;
+  const flowSpots = flow ? getFlowSpots(flow, spots) : [];
   const currentSpot = currentSpotId ? getSpotById(currentSpotId) : null;
   const nextSpotData = nextSpotId ? getSpotById(nextSpotId) : null;
 
@@ -76,9 +81,28 @@ export function FlowScreen() {
     }).start();
   }, [isVisible, fadeAnim]);
 
+  // Obtener ubicación del usuario
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } catch (error) {
+        console.error('Error getting location:', error);
+      }
+    })();
+  }, []);
+
   // Integrar geofencing con narration triggers
   useEffect(() => {
-    if (!isVisible || !path || pathSpots.length === 0) {
+    if (!isVisible || !flow || flowSpots.length === 0) {
       geofencingSimulator.stopMonitoring();
       return;
     }
@@ -96,29 +120,29 @@ export function FlowScreen() {
       },
     });
 
-    // Iniciar monitoreo con ubicación inicial (simulada - usar primer spot del path)
+    // Iniciar monitoreo con ubicación inicial (simulada - usar primer spot del flow)
     // En producción, esto vendría de expo-location
-    if (pathSpots.length > 0) {
+    if (flowSpots.length > 0) {
       const initialLocation = {
-        latitude: pathSpots[0].location.latitude,
-        longitude: pathSpots[0].location.longitude,
+        latitude: flowSpots[0].location.latitude,
+        longitude: flowSpots[0].location.longitude,
       };
-      geofencingSimulator.startMonitoring(initialLocation, pathSpots);
+      geofencingSimulator.startMonitoring(initialLocation, flowSpots);
     }
 
     // Disparar narration "between" cuando se mueve entre spots
     // Esto se activará automáticamente cuando el geofencing detecte movimiento
-    if (currentSpotId && nextSpotId && path) {
-      narrationTriggers.triggerBetween(path.id);
+    if (currentSpotId && nextSpotId && flow) {
+      narrationTriggers.triggerBetween(flow.id);
     }
 
     return () => {
       removeCallbacks();
       geofencingSimulator.stopMonitoring();
     };
-  }, [isVisible, path?.id, pathSpots.length, currentSpotId, nextSpotId, narrationTriggers]);
+  }, [isVisible, flow?.id, flowSpots.length, currentSpotId, nextSpotId, narrationTriggers]);
 
-  if (!isVisible || !path) {
+  if (!isVisible || !flow) {
     return null;
   }
 
@@ -130,7 +154,11 @@ export function FlowScreen() {
     }
   };
 
-  const handleEnd = () => {
+  const handleMinimize = () => {
+    minimizeFlow();
+  };
+
+  const handleClose = () => {
     endFlow();
     router.back();
   };
@@ -139,16 +167,30 @@ export function FlowScreen() {
     nextSpot();
   };
 
+  const handleLike = () => {
+    if (currentSpotId) {
+      toggleLikeSpotFromPlayer(currentSpotId);
+    }
+  };
+
   const renderHeader = () => (
     <GlassView style={styles.header} intensity="light" opacity="medium">
       <View style={styles.headerContent}>
         <Text style={[textStyles.caption, { color: colors.text }]}>NOW MOVING</Text>
-        <TouchableOpacity
-          onPress={handleEnd}
-          style={iconTouchableContainer.base}
-          activeOpacity={0.7}>
-          <Icon name="close" size={24} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerControls}>
+          <TouchableOpacity
+            onPress={handleMinimize}
+            style={iconTouchableContainer.base}
+            activeOpacity={0.7}>
+            <Icon name="minimize" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleClose}
+            style={iconTouchableContainer.base}
+            activeOpacity={0.7}>
+            <Icon name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
     </GlassView>
   );
@@ -207,46 +249,58 @@ export function FlowScreen() {
   const renderTimeline = () => {
     if (viewMode !== 'list') return null;
 
+    // Spot actual destacado
+    const currentSpot = currentSpotId ? getSpotById(currentSpotId) : null;
+    const currentIndex = flowState.currentSpotIndex;
+    
+    // Spots futuros (debajo del actual)
+    const futureSpots = flowSpots.slice(currentIndex + 1);
+
     return (
       <View style={styles.timelineContainer}>
-        {pathSpots.map((spot, index) => {
-          const isPast = index < flowState.currentSpotIndex;
-          const isCurrent = index === flowState.currentSpotIndex;
+        {/* Spot actual destacado */}
+        {currentSpot && (
+          <View style={styles.currentSpotContainer}>
+            <Text style={[textStyles.bodyMedium, { color: colors.text, marginBottom: spacing.sm }]}>
+              Current Spot
+            </Text>
+            <SpotCardCompact 
+              spot={currentSpot} 
+              distance={userLocation ? calculateDistanceToSpot(userLocation, currentSpot.location) : undefined}
+              onMapPress={() => {
+                setViewMode('map');
+              }}
+            />
+          </View>
+        )}
 
-          return (
-            <View key={spot.id} style={styles.timelineItem}>
-              <View style={styles.timelineLineContainer}>
-                {index < pathSpots.length - 1 && (
-                  <View
-                    style={[
-                      styles.timelineLine,
-                      {
-                        backgroundColor: isPast ? colors.tint : colors.icon + '20',
-                      },
-                    ]}
-                  />
-                )}
-                <View
-                  style={[
-                    styles.timelineDot,
-                    {
-                      backgroundColor: isPast
-                        ? colors.tint
-                        : isCurrent
-                          ? colors.tint
-                          : colors.icon + '40',
-                      borderWidth: isPast ? 0 : 2,
-                      borderColor: colors.icon + '40',
-                    },
-                  ]}
+        {/* Listado de spots futuros con drag and drop */}
+        {futureSpots.length > 0 && (
+          <View style={styles.spotsListContainer}>
+            <Text style={[textStyles.bodyMedium, { color: colors.text, marginBottom: spacing.sm, marginTop: spacing.md }]}>
+              Upcoming Spots
+            </Text>
+            {futureSpots.map((spot, relativeIndex) => {
+              const absoluteIndex = currentIndex + 1 + relativeIndex;
+              const distance = userLocation
+                ? calculateDistanceToSpot(userLocation, spot.location)
+                : undefined;
+              
+              return (
+                <FlowSpotCard
+                  key={spot.id}
+                  spot={spot}
+                  index={absoluteIndex}
+                  distance={distance}
+                  isActive={absoluteIndex === currentIndex}
+                  onPress={() => {
+                    // TODO: Implementar navegación al spot
+                  }}
                 />
-              </View>
-              <View style={styles.timelineSpot}>
-                <SpotCard spot={spot} />
-              </View>
-            </View>
-          );
-        })}
+              );
+            })}
+          </View>
+        )}
       </View>
     );
   };
@@ -279,7 +333,7 @@ export function FlowScreen() {
         />
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() => setIsFullPlayerVisible(true)}
+        onPress={() => router.push('/flow-full-player')}
         style={[iconTouchableContainer.base, styles.controlButton]}
         activeOpacity={0.7}>
         <Icon name="more" size={24} color={colors.text} />
@@ -303,7 +357,7 @@ export function FlowScreen() {
       visible={isVisible}
       transparent
       animationType="none"
-      onRequestClose={handleEnd}>
+      onRequestClose={handleClose}>
       <Animated.View
         style={[
           styles.container,
@@ -319,7 +373,6 @@ export function FlowScreen() {
         </ScrollView>
         {renderControls()}
       </Animated.View>
-      <FlowFullPlayer visible={isFullPlayerVisible} onClose={() => setIsFullPlayerVisible(false)} />
     </Modal>
   );
 }
@@ -339,6 +392,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  headerControls: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   segmentedControl: {
     flexDirection: 'row',
@@ -397,6 +454,12 @@ const styles = StyleSheet.create({
   },
   timelineSpot: {
     flex: 1,
+  },
+  currentSpotContainer: {
+    marginBottom: spacing.md,
+  },
+  spotsListContainer: {
+    gap: spacing.sm,
   },
   mapPlaceholder: {
     flex: 1,

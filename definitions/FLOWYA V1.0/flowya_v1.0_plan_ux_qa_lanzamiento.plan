@@ -1,20 +1,20 @@
 ---
-name: Mini Tours - Plan de Diseño UX/UI, QA y Lanzamiento
-overview: "Plan para completar el diseño final, QA exhaustivo y preparación para pruebas internas. Basado en Product Definition V5. Se conecta naturalmente con el plan anterior (Scopes 1-11 completados)."
+name: FLOWYA V1.0 Plan
+overview: "Plan para completar FLOWYA V1.0: revisión global de nombre (Mini Tours → FLOWYA), diseño UX/UI final, QA exhaustivo y preparación para pruebas internas. Continúa desde donde quedó V5, manteniendo numeración de scopes."
 todos: []
 ---
 
-# Plan de Diseño UX/UI, QA y Lanzamiento: Mini Tours
+# Plan de Diseño UX/UI, QA y Lanzamiento: FLOWYA V1.0
 
 ## Visión General
 
-Este plan continúa desde donde termina el plan anterior (Scopes 1-11 completados). Se enfoca en:
-- **Versionamiento y preservación** del trabajo realizado
-- **Diseño UX/UI final** según Product Definition V5
+Este plan continúa desde donde termina el trabajo previo (Scopes 1-11 completados en V5). Se enfoca en:
+- **Revisión global de nombre**: Reemplazar todas las referencias a "Mini Tours" por "FLOWYA"
+- **Diseño UX/UI final** según Product Definition FLOWYA V1.0
 - **QA exhaustivo** antes de pruebas internas
 - **Preparación para lanzamiento** de versión de pruebas internas
 
-**Fuente de verdad:** Product Definition V5 (`definitions/V5/MINI TOURS Product Definition V5.md` - versión Markdown legible)
+**Fuente de verdad:** Product Definition FLOWYA V1.0 (`definitions/FLOWYA V1.0/FLOWYA Product Definition V1.0.md`)
 
 **Estado previo:** Scopes 1-11 del plan anterior completados
 - ✅ Fundación y Setup
@@ -31,69 +31,80 @@ Este plan continúa desde donde termina el plan anterior (Scopes 1-11 completado
 
 ---
 
-## Scope 0: Versionamiento y Preservación del Estado Actual
+## Scope 0: Revisión Global de Nombre - Mini Tours → FLOWYA
 
-**Objetivo:** Crear un punto de control seguro del estado actual antes de comenzar diseño final y QA.
+**Objetivo:** Reemplazar sistemáticamente todas las referencias a "Mini Tours", "Mini-tours", "Mini tours", "minitours" por "FLOWYA" en todo el codebase, configuraciones y documentación.
 
 ### Tareas
 
-1. **Crear tag de versión en Git**
+1. **Revisión de Archivos de Configuración**
 
-- Tag: `v0.11.0-pre-ux-qa` (o similar según convención)
-- Descripción: "Estado previo a diseño UX/UI final y QA - Scopes 1-11 completados"
-- Commit final del estado actual
-- Verificar que todos los cambios estén commiteados
+- `package.json`: Actualizar nombre del proyecto de "mini-tours-expo" a "flowya-expo"
+- `app.json`: Actualizar name, slug, scheme de "mini-tours-expo"/"minitoursexpo" a "flowya"/"flowya"
+- Verificar que todos los identificadores usen "flowya"
 
-2. **Documentar estado actual**
+2. **Revisión de Código Fuente**
 
-- Crear `docs/ESTADO_PRE_UX_QA.md`
-- Listar todos los componentes implementados
-- Listar todas las funcionalidades completadas
-- Listar funcionalidades pendientes o parciales
-- Listar bugs conocidos (si los hay)
-- Listar dependencias y versiones actuales
+- Buscar y reemplazar en todos los archivos `.ts`, `.tsx`, `.js`, `.jsx`:
+  - "Mini Tours" → "FLOWYA"
+  - "Mini-tours" → "FLOWYA"
+  - "Mini tours" → "FLOWYA"
+  - "minitours" → "flowya"
+  - "mini-tours" → "flowya"
+- Verificar comentarios, strings, nombres de funciones, variables
+- Mantener consistencia en mayúsculas: "FLOWYA" para nombre del producto, "flowya" para identificadores técnicos
 
-3. **Crear branch de preservación**
+3. **Revisión de Documentación**
 
-- Branch: `preserve/pre-ux-qa-state`
-- Merge del estado actual
-- Branch protegido (no se modifica)
+- `README.md`: Actualizar título y referencias
+- Todos los archivos `.md` en `docs/`: Actualizar referencias
+- Archivos de estado y resúmenes: Actualizar nombres
 
-4. **Backup de configuración**
+4. **Revisión de Textos de Interfaz**
 
-- Exportar configuración de proyecto (package.json, app.json, tsconfig.json)
-- Documentar variables de entorno (si las hay)
-- Documentar configuraciones específicas de plataforma
+- Strings hardcodeados en componentes
+- Textos de UI (títulos, descripciones, mensajes)
+- Microcopys y textos de ayuda
+- Mensajes de error o estados
 
-5. **Verificar build funcional**
+5. **Verificación Sistemática**
 
-- Build exitoso en iOS
-- Build exitoso en Android
-- Build exitoso en Web
-- Documentar cualquier error conocido
+- Usar grep/búsqueda para encontrar todas las ocurrencias restantes
+- Verificar que no queden referencias antiguas
+- Probar builds después de cambios para asegurar que no se rompa nada
+
+6. **Mantener Historial**
+
+- Crear documento `docs/MIGRACION_MINI_TOURS_A_FLOWYA.md` que documente:
+  - Fecha de migración
+  - Archivos modificados
+  - Cambios realizados
+  - Referencias al trabajo previo
 
 ### TODOs del Scope 0
 
-- [ ] Crear tag de versión `v0.11.0-pre-ux-qa`
-- [ ] Crear documentación de estado actual (`docs/ESTADO_PRE_UX_QA.md`)
-- [ ] Crear branch de preservación `preserve/pre-ux-qa-state`
-- [ ] Backup de configuraciones
-- [ ] Verificar builds en todas las plataformas
-- [ ] Documentar estado funcional actual
+- [ ] Actualizar `package.json` (name)
+- [ ] Actualizar `app.json` (name, slug, scheme)
+- [ ] Buscar y reemplazar en código fuente (archivos .ts, .tsx, .js, .jsx)
+- [ ] Actualizar `README.md`
+- [ ] Actualizar documentación en `docs/`
+- [ ] Actualizar strings en componentes UI
+- [ ] Verificación final con grep
+- [ ] Probar builds (iOS, Android, Web)
+- [ ] Crear documento de migración
 
 ### Entregables
 
-- Tag de versión creado
-- Documentación completa del estado actual
-- Branch de preservación protegido
-- Backup de configuraciones
-- Builds verificados y documentados
+- Todos los archivos actualizados con nombre FLOWYA
+- Builds funcionando correctamente
+- Documentación de migración creada
+- Verificación completa sin referencias antiguas
 
 ---
 
 ## Scope 12: Diseño UX/UI Final
 
-**Objetivo:** Refinar y completar el diseño UX/UI según Product Definition V5, asegurando coherencia visual y experiencia de usuario óptima.
+**Objetivo:** Refinar y completar el diseño UX/UI según Product Definition FLOWYA V1.0, asegurando coherencia visual y experiencia de usuario óptima.
 
 ### Tareas
 
@@ -104,7 +115,7 @@ Revisar cada componente/pantalla siguiendo este proceso iterativo:
 #### 1.1 Identificar Inconsistencias
 
 Para cada componente:
-- Comparar con Product Definition V5 (versión Markdown legible)
+- Comparar con Product Definition FLOWYA V1.0
 - Verificar sistema de diseño (espaciado base 8px, tipografía Inter, iconos Lucide)
 - Identificar desviaciones visuales
 - Documentar todas las inconsistencias encontradas
@@ -146,6 +157,8 @@ Revisar componentes en este orden específico:
    - GemsSpotCard
    - GemsPathCard
    - SearchResultCard
+   - PathCard
+   - PathSpotCard
 
 3. **Pantallas principales**
    - Home (Explore y Map tabs)
@@ -155,19 +168,29 @@ Revisar componentes en este orden específico:
    - Profile
 
 4. **Flow**
-   - FlowScreen
+   - FlowScreen (agregar controles minimizar/cerrar en header, listado drag and drop de spots, diálogo guardar al cerrar)
    - FlowMiniPlayer
    - FlowFullPlayer
 
 5. **Modales/Drawers**
-   - SpotDetailSheet
+   - Spot Detail (pantalla completa)
    - CreateSpotModal
 
-6. **Map**
+6. **Path Detail**
+   - Crear `app/path-detail.tsx` como pantalla completa (pendiente de V5)
+   - Implementar header con back, like, share
+   - Implementar tags y descripción
+   - Implementar sección de métricas (duración, distancia, dificultad, momento)
+   - Implementar botón "Start Flow" (nota: el término correcto es "Flow", no "Playlist")
+   - Implementar sección con lista de spots
+   - Implementar funcionalidad de reordenamiento
+   - Agregar ruta en `app/_layout.tsx`
+
+7. **Map**
    - SimpleMapView
    - MapSpotMarker
 
-7. **Navegación**
+8. **Navegación**
    - Tab Bar
 
 2. **Sistema de Diseño - Verificación Global**
@@ -206,12 +229,13 @@ Después de revisar todos los componentes:
 
 6. **Microcopys y Textos**
 
-- Revisar todos los textos según Product Definition V5
+- Revisar todos los textos según Product Definition FLOWYA V1.0
+- Actualizar título de Home screen: cambiar "Home" por "FLOWYA - Home" en `app/(tabs)/home.tsx` (líneas 395 y 463)
 - Asegurar tono conversacional
 - Asegurar frases cortas y respirables
 - Verificar que no haya textos largos
 - Verificar que no se justifique texto
-- Aplicar principio: "El texto acompaña al lugar, no compite con él"
+- Aplicar principio: "La interfaz nunca debe competir con el lugar"
 
 7. **Dark/Light Mode**
 
@@ -220,34 +244,59 @@ Después de revisar todos los componentes:
 - Verificar contraste y legibilidad en ambos modos
 - Verificar transiciones suaves entre modos
 
-8. **Referencias Visuales**
+8. **Ajustes Pendientes de Spot Detail**
 
-- Revisar referencias visuales en `definitions/img_UI/` (solo como referencia visual, no microcopys)
-- Usar como guía de estilo, no como fuente de verdad para textos
+- [ ] Ajustar iconos del header a envolvente circular según convenciones (dark mode: fondo negro/icono blanco, estado activo: color tint)
+- [ ] Implementar menú de opciones (tres puntos) con: "Suggest an edit", "Reportar", "Este lugar ya no existe"
+
+9. **Mejoras de FlowScreen**
+
+- [ ] Agregar botones de minimizar y cerrar en el header de FlowScreen (junto a "NOW MOVING")
+- [ ] Implementar listado de spots con drag and drop debajo del spot actual en vista "List" (usando PathSpotCard)
+- [ ] Implementar diálogo de guardar Path al cerrar FlowScreen:
+  - Opción "Guardar Path"
+  - Opción "Cerrar sin guardar"
+- [ ] Implementar funcionalidad de minimizar: oculta FlowScreen y muestra FlowMiniPlayer sobre tab bar
+- [ ] Implementar funcionalidad de cerrar: regresa a pantalla de origen (router.back())
+- [ ] Mover botón "Testing Components" más arriba en Home screen
+
+10. **Ajustes de FlowMiniPlayer**
+
+- [ ] Cambiar a fullwidth: eliminar márgenes laterales (left: 0, right: 0)
+- [ ] Eliminar bordes redondeados: borderRadius: 0 para fusionarse con viewport
+- [ ] Reemplazar botón de navegación por botón play/pause central
+- [ ] Implementar controles: play/pause (pauseFlow/resumeFlow), atrás (previousSpot), adelante (nextSpot)
+- [ ] Asegurar que controles no expandan el player (stopPropagation)
 
 ### TODOs del Scope 12
 
 - [ ] Revisar componentes base (GlassView, Icon)
-- [ ] Revisar Cards (SpotCard, GemsSpotCard, GemsPathCard, SearchResultCard)
+- [ ] Revisar Cards (SpotCard, GemsSpotCard, GemsPathCard, SearchResultCard, PathCard, PathSpotCard)
 - [ ] Revisar pantallas principales (Home, Gems, Saved, Search, Profile)
+- [ ] Actualizar título de Home: "FLOWYA - Home" en `app/(tabs)/home.tsx`
 - [ ] Revisar Flow (FlowScreen, FlowMiniPlayer, FlowFullPlayer)
-- [ ] Revisar Modales/Drawers (SpotDetailSheet, CreateSpotModal)
+- [ ] Mejoras de FlowScreen (controles header, listado drag and drop, diálogo guardar, minimizar/cerrar)
+- [ ] Mover botón "Testing Components" más arriba en Home
+- [ ] Crear Path Detail (pantalla completa)
+- [ ] Revisar Modales/Drawers (Spot Detail, CreateSpotModal)
 - [ ] Revisar Map (SimpleMapView, MapSpotMarker)
 - [ ] Revisar Navegación (Tab Bar)
 - [ ] Verificación global del sistema de diseño
 - [ ] Completar estados visuales en todas las pantallas
 - [ ] Revisar y ajustar animaciones y transiciones
 - [ ] Verificar accesibilidad visual
-- [ ] Revisar y ajustar microcopys según V5
+- [ ] Revisar y ajustar microcopys según FLOWYA V1.0
 - [ ] Verificar dark/light mode completo
+- [ ] Ajustes finales de Spot Detail
 
 ### Entregables
 
 - Sistema de diseño refinado y documentado
 - Todos los componentes con diseño final
+- Path Detail creado e implementado
 - Estados visuales completos
 - Animaciones suaves y coherentes
-- Microcopys alineados con V5
+- Microcopys alineados con FLOWYA V1.0
 - Dark/light mode funcional y coherente
 
 ---
@@ -265,8 +314,10 @@ Después de revisar todos los componentes:
 - **Gems**: Feed, cards, navegación, acciones
 - **Search**: Búsqueda, sugerencias, resultados, crear Spot desde búsqueda
 - **Saved**: Tabs, lists, timeline, acciones
-- **Profile**: Preferencias, ajustes, navegación
+- **Profile**: Preferencias, ajustes, navegación, Liked Spots
 - **Flow**: Iniciar Flow, navegación entre Spots, pausar, salir, narration
+- **Spot Detail**: Pantalla completa, navegación, acciones, menú
+- **Path Detail**: Pantalla completa, navegación, acciones, reordenamiento
 
 2. **QA de Integración - Contextos**
 
@@ -327,7 +378,7 @@ Después de revisar todos los componentes:
 - Flujo: Explorar → Ver Spot → Guardar → Iniciar Flow → Recorrer → Salir
 - Flujo: Buscar → Crear Spot → Guardar → Ver en Saved
 - Flujo: Guardar varios Spots → Sugerencia de Path → Personalizar → Guardar
-- Flujo: Gems → Ver Spot → Like → Ver en Saved
+- Flujo: Gems → Ver Spot → Like desde player → Ver en Profile (Liked Spots)
 
 10. **QA de Edge Cases**
 
@@ -420,8 +471,8 @@ Después de revisar todos los componentes:
 
 5. **Tag de Versión para Pruebas Internas**
 
-- Tag: `v0.12.0-internal-testing` (o similar)
-- Descripción: "Versión para pruebas internas - Pre-ux/qa completado"
+- Tag: `v1.0.0-internal-testing` (o similar)
+- Descripción: "Versión para pruebas internas - FLOWYA V1.0 - Pre-ux/qa completado"
 - Commit final antes de pruebas
 
 ### TODOs del Scope 14
@@ -443,32 +494,27 @@ Después de revisar todos los componentes:
 
 ## Dependencias entre Scopes
 
-```javascript
-Plan Anterior (Scopes 1-11) ✅ COMPLETADO
-  ↓
-Scope 0 (Versionamiento) ──┐
-  ↓                         │
-Scope 12 (Diseño UX/UI) ────┤
-  ↓                         │
-Scope 13 (QA Exhaustivo) ───┤
-  ↓                         │
-Scope 14 (Corrección Bugs) ┘
-  ↓
-Versión para Pruebas Internas 🚀
+```mermaid
+graph TD
+    A[Plan Anterior - Scopes 1-11 ✅] --> B[Scope 0: Revisión Nombre]
+    B --> C[Scope 12: Diseño UX/UI]
+    C --> D[Scope 13: QA Exhaustivo]
+    D --> E[Scope 14: Corrección Bugs]
+    E --> F[Versión para Pruebas Internas 🚀]
 ```
 
 ---
 
 ## Notas de Implementación
 
-1. **Product Definition V5 es la fuente de verdad**: Todas las decisiones de diseño y funcionalidad deben alinearse con V5 (`definitions/V5/MINI TOURS Product Definition V5.rtf`).
+1. **Product Definition FLOWYA V1.0 es la fuente de verdad**: Todas las decisiones de diseño y funcionalidad deben alinearse con la definición en `definitions/FLOWYA V1.0/FLOWYA Product Definition V1.0.md`.
 
 2. **Fases de desarrollo claras**:
    - **Fase 1: Pruebas Internas** (actual): Sin onboarding completo, permisos básicos, funcionalidad core
    - **Fase 2: Usuarios Reales** (futuro): Con onboarding, permisos completos, funcionalidades adicionales
 
 3. **Principios de Diseño (CRÍTICO - Aplicar en Scope 12)**:
-   - **Principio rector**: "The interface should never compete with the place" - calmado, presente, casi invisible
+   - **Principio rector**: "FLOWYA nunca debe competir con el lugar" - calmado, presente, casi invisible
    - **Layout**: Mobile-first, columna única, scroll natural, contenido ligero
    - **Capas**: Mundo real → UI contextual → Overlays → Navegación (sin bordes, sin sombras duras)
    - **Tipografía**: Inter como ÚNICA tipografía, pocos tamaños alineados a 8px, Regular/Medium/Semibold, frases cortas y respirables, NO justificar texto
@@ -482,10 +528,18 @@ Versión para Pruebas Internas 🚀
    - Valores permitidos: 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128
    - NUNCA usar valores impares o no múltiplos de 8
 
-5. **Referencias Visuales**:
-   - Las imágenes en `definitions/img_UI/` son solo referencia visual de componentes y estilo
-   - **CRÍTICO**: Los microcopys/textos de las imágenes NO son referencia - usar Product Definition V5
-   - **CRÍTICO**: En imágenes puede aparecer "Route" pero el lenguaje correcto es "Path" según definición
+5. **Lenguaje del Producto**:
+   - **Spot**: un lugar señalado
+   - **Path**: un camino posible, una sugerencia
+   - **Flow**: el estado activo de consulta o reproducción de un Path
+   - **Map**: exploración libre y planeación
+   - **Explore**: exploración contextual sin compromiso
+   - **Gems**: lugares y Paths que brillan ahora
+   - **Saved**: memoria personal del usuario
+   - **Like**: señal de afinidad positiva
+   - **Not my vibe**: señal de afinidad negativa (sin juicio)
+   - **Narration**: acompañamiento emocional y contextual
+   - **Search**: búsqueda contextual de Spots y Paths
 
 6. **QA debe ser exhaustivo**: No lanzar pruebas internas con bugs críticos conocidos.
 
@@ -504,7 +558,7 @@ Una vez completadas las pruebas internas y recopilado feedback:
 3. **Scope 17**: Preparación para Fase 2 (Usuarios Reales)
    - Onboarding completo
    - Gestión completa de permisos
-   - Funcionalidades adicionales según V5
+   - Funcionalidades adicionales según definición
 4. **Scope 18**: QA para usuarios reales
 5. **Scope 19**: Lanzamiento beta/público
 
@@ -513,6 +567,5 @@ Una vez completadas las pruebas internas y recopilado feedback:
 **Estado del Plan**: En desarrollo
 **Última actualización**: [Fecha]
 **Versión del Plan**: 1.0
-**Basado en**: Product Definition V5
-**Plan anterior**: `definitions/V4/mini_tours_mvp_plan_e4601459.plan` (Scopes 1-11 completados)
-
+**Basado en**: Product Definition FLOWYA V1.0
+**Plan anterior**: `definitions/V5/mini_tours_plan_ux_qa_lanzamiento.plan` (Scopes 1-11 completados)

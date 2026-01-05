@@ -1,23 +1,23 @@
-# Estado Pre-UX/QA - Mini Tours
+# Estado Pre-UX/QA - FLOWYA
 
 **Fecha:** $(date)
-**Tag de versión:** `v0.11.0-pre-ux-qa`
-**Estado:** Antes de comenzar diseño UX/UI final y QA según Product Definition V5
+**Tag de versión:** `v1.0.0-pre-ux-qa`
+**Estado:** Antes de comenzar diseño UX/UI final y QA según Product Definition FLOWYA V1.0
 
 ## Resumen
 
-Este documento captura el estado completo del proyecto antes de comenzar con el Scope 12 (Diseño UX/UI Final) y Scope 13 (QA Exhaustivo) según el plan en `definitions/V5/mini_tours_plan_ux_qa_lanzamiento.plan`.
+Este documento captura el estado completo del proyecto antes de comenzar con el Scope 12 (Diseño UX/UI Final) y Scope 13 (QA Exhaustivo) según el plan en `definitions/FLOWYA V1.0/flowya_v1.0_plan_ux_qa_lanzamiento.plan`.
 
 ## Product Definition
 
-- **Versión actual:** V5
-- **Ubicación:** `definitions/V5/MINI TOURS Product Definition V5.rtf`
+- **Versión actual:** FLOWYA V1.0
+- **Ubicación:** `definitions/FLOWYA V1.0/FLOWYA Product Definition V1.0.md`
 - **Estado:** Completo con nuevas funcionalidades y fases de desarrollo
 
 ## Plan de Desarrollo
 
-- **Plan anterior:** `definitions/V4/mini_tours_mvp_plan_e4601459.plan` (Scopes 1-11 completados)
-- **Plan actual:** `definitions/V5/mini_tours_plan_ux_qa_lanzamiento.plan` (Scopes 0, 12, 13, 14)
+- **Plan anterior:** `definitions/V4/mini_tours_mvp_plan_e4601459.plan` (Scopes 1-11 completados) - Versión histórica de Mini Tours
+- **Plan actual:** `definitions/FLOWYA V1.0/flowya_v1.0_plan_ux_qa_lanzamiento.plan` (Scopes 0, 12, 13, 14)
 
 ## Componentes Implementados
 

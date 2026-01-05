@@ -98,6 +98,7 @@ export default function ProfileScreen() {
     }
   };
 
+
   const handleClearStorage = () => {
     Alert.alert(
       'Limpiar Datos',
@@ -125,36 +126,47 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <GlassView style={styles.header} intensity="light" opacity="medium">
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={handleBackPress}
-            style={iconTouchableContainer.base}
-            activeOpacity={0.7}>
-            <Icon name="back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[textStyles.heading3, { color: colors.text }]}>Profile</Text>
-          <View style={iconTouchableContainer.base} />
-        </View>
-      </GlassView>
-
-      {/* Contenido */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        {/* User Profile Card */}
-        <GlassView style={styles.card} intensity="medium" opacity="medium">
-          <View style={styles.userCard}>
-            <View style={[styles.avatar, { backgroundColor: colors.tint + '40' }]}>
-              <Icon name="profile" size={32} color={colors.tint} />
-            </View>
-            <View style={styles.userInfo}>
-              <Text style={[textStyles.heading4, { color: colors.text }]}>Usuario</Text>
-              <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
-                usuario@ejemplo.com
-              </Text>
-            </View>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}>
+        {/* Header inside ScrollView (scrolls) */}
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor:
+                colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            },
+          ]}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              onPress={handleBackPress}
+              style={iconTouchableContainer.base}
+              activeOpacity={0.7}>
+              <Icon name="back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={[textStyles.heading3, { color: colors.text }]}>Profile</Text>
+            <View style={iconTouchableContainer.base} />
           </View>
-        </GlassView>
+        </View>
+
+        {/* User Profile Card */}
+        <View style={styles.section}>
+          <GlassView style={styles.card} intensity="medium" opacity="medium">
+            <View style={styles.userCard}>
+              <View style={[styles.avatar, { backgroundColor: colors.tint + '40' }]}>
+                <Icon name="profile" size={32} color={colors.tint} />
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={[textStyles.heading4, { color: colors.text }]}>Usuario</Text>
+                <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                  usuario@ejemplo.com
+                </Text>
+              </View>
+            </View>
+          </GlassView>
+        </View>
 
         {/* GENERAL Section */}
         <View style={styles.section}>
@@ -182,6 +194,27 @@ export default function ProfileScreen() {
               onValueChange={(value) => handlePreferenceChange('notificationsEnabled', value)}
               description="Notificaciones sobre nuevos spots y paths"
             />
+          </GlassView>
+        </View>
+
+        {/* LIKED SPOTS Section */}
+        <View style={styles.section}>
+          <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.md, textTransform: 'uppercase' }]}>
+            MY CONTENT
+          </Text>
+          <GlassView style={styles.card} intensity="medium" opacity="medium">
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => router.push('/liked-spots')}
+              activeOpacity={0.7}>
+              <View style={styles.actionContent}>
+                <Text style={[textStyles.bodyMedium, { color: colors.text }]}>Liked Spots</Text>
+                <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                  Spots you liked while navigating
+                </Text>
+              </View>
+              <Icon name="like" size={20} color={colors.icon} />
+            </TouchableOpacity>
           </GlassView>
         </View>
 
@@ -219,7 +252,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     paddingHorizontal: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginBottom: spacing.md,
   },
   headerContent: {
     flexDirection: 'row',
@@ -230,10 +263,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
   section: {
     marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
   },
   card: {
     borderRadius: 16,

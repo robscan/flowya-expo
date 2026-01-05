@@ -1,52 +1,63 @@
-import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { Tabs } from 'expo-router';
+import { Platform, StyleSheet, View, useEffect } from 'react-native';
+import { useOverlay } from '@/contexts/OverlayContext';
 
 import { Icon } from '@/components/ui/Icon';
 import { Colors } from '@/constants/theme';
+import { fontFamily, fontSize } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { glassOpacity } from '@/utils/glassStyles';
+import { glassColors, glowColors, shadows } from '@/utils/glassStyles';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { tabBarHeight: contextTabBarHeight, isTabBarLabelsVisible } = useOverlay();
 
   // Tab bar background con efecto glass (BlurView en iOS/Android, transparencia en web)
-  // Principio: sutil, casi invisible, blur suave con transparencia
+  // Fondo gris sutil con blur
+  const colors = glassColors[colorScheme ?? 'light'];
+  const shadow = shadows.strong; // Sombra fuerte para TabBar (como modales) - efecto envolvente
+  
   const tabBarBackground = () => {
     if (Platform.OS === 'web') {
-      // Web: solo transparencia sin blur
+      // Web: fondo gris sutil sin blur
       return (
         <View
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor:
-                colorScheme === 'dark'
-                  ? `rgba(28, 28, 30, ${glassOpacity.strong})`
-                  : `rgba(255, 255, 255, ${glassOpacity.strong})`,
+              backgroundColor: colors.backgroundGray, // Fondo gris sutil
             },
           ]}
         />
       );
     }
-    // iOS/Android: BlurView para efecto glass real
+    // iOS/Android: BlurView con fondo gris sutil
     return (
       <BlurView
-        intensity={30}
+        intensity={35}
         tint={colorScheme === 'dark' ? 'dark' : 'light'}
-        style={StyleSheet.absoluteFill}
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: colors.backgroundGray, // Fondo gris sutil
+          },
+        ]}
       />
     );
   };
 
-  // Estilos glass para el tab bar
+  // Estilos glass para el tab bar: se actualiza dinámicamente desde el contexto
   const glassTabBarStyle = {
     backgroundColor: 'transparent',
     borderTopWidth: 1,
-    borderTopColor:
-      colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    elevation: 0, // Android: remover sombra
-    shadowOpacity: 0, // iOS: remover sombra
+    borderTopColor: glowColors[colorScheme ?? 'light'].contour, // Glow en borde superior (usando tokens)
+    paddingBottom: contextTabBarHeight === 88 ? 20 : 10, // Padding dinámico según altura
+    paddingTop: 8, // Padding superior sutil
+    height: contextTabBarHeight, // Altura dinámica desde contexto (88 o 58)
+    borderTopLeftRadius: 20, // Bordes redondeados superiores para efecto flotante
+    borderTopRightRadius: 20,
+    ...shadow, // Sombra media para elevación
   };
 
   return (
@@ -54,10 +65,26 @@ export default function TabLayout() {
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+            tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].icon,
             headerShown: false,
           tabBarBackground: tabBarBackground,
           tabBarStyle: glassTabBarStyle,
-          tabBarShowLabel: false, // Ocultar labels de opciones de menú
+            tabBarShowLabel: isTabBarLabelsVisible, // Mostrar/ocultar labels según contexto
+            tabBarLabelStyle: {
+              fontFamily,
+              fontSize: fontSize.xs, // 12px - tamaño pequeño pero legible
+              fontWeight: '400',
+              marginTop: 4, // Más espacio entre icono y label (cambió de -4 a 4)
+            },
+            tabBarItemStyle: {
+              gap: 4, // Espacio adicional entre icono y label
+            },
+            tabBarIndicatorStyle: {
+              backgroundColor: Colors[colorScheme ?? 'light'].tint, // Color del indicador (mismo que tab activo)
+              height: 3, // Altura de la línea indicadora
+              top: 0, // Posición en la parte superior
+              borderRadius: 1.5, // Bordes ligeramente redondeados
+            },
           }}>
           <Tabs.Screen
             name="index"
@@ -70,28 +97,28 @@ export default function TabLayout() {
           name="home"
           options={{
             title: 'Home',
-            tabBarIcon: ({ color }) => <Icon name="home" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <Icon name="home" size={28} color={color} />,
           }}
         />
         <Tabs.Screen
           name="gems"
             options={{
             title: 'Gems',
-            tabBarIcon: ({ color }) => <Icon name="gems" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <Icon name="gems" size={28} color={color} />,
             }}
           />
           <Tabs.Screen
             name="saved"
             options={{
               title: 'Saved',
-            tabBarIcon: ({ color }) => <Icon name="saved" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <Icon name="saved" size={28} color={color} />,
           }}
         />
         <Tabs.Screen
           name="search"
           options={{
             title: 'Search',
-            tabBarIcon: ({ color }) => <Icon name="search" size={24} color={color} />,
+            tabBarIcon: ({ color }) => <Icon name="search" size={28} color={color} />,
             }}
           />
           <Tabs.Screen

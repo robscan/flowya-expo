@@ -40,14 +40,17 @@ function matchesText(text: string, searchQuery: string): boolean {
 function calculateSpotRelevance(spot: Spot, query: string): number {
   let score = 0;
   const normalizedQuery = query.toLowerCase().trim();
+  let hasMatch = false;
   
   // Coincidencia exacta en nombre (mayor peso)
   if (spot.name && spot.name.toLowerCase() === normalizedQuery) {
     score += 100;
+    hasMatch = true;
   }
   // Coincidencia parcial en nombre (peso alto)
   else if (spot.name && spot.name.toLowerCase().includes(normalizedQuery)) {
     score += 50;
+    hasMatch = true;
     // Bonus si empieza con el query
     if (spot.name.toLowerCase().startsWith(normalizedQuery)) {
       score += 20;
@@ -57,16 +60,20 @@ function calculateSpotRelevance(spot: Spot, query: string): number {
   // Coincidencia en descripción (peso medio)
   if (spot.description && matchesText(spot.description, query)) {
     score += 20;
+    hasMatch = true;
   }
   
-  // Bonus si tiene nombre (spots completos tienen más peso)
-  if (spot.name) {
-    score += 5;
-  }
-  
-  // Bonus si tiene fotos
-  if (spot.photos && spot.photos.length > 0) {
-    score += 3;
+  // Solo aplicar bonos si hay una coincidencia real
+  if (hasMatch) {
+    // Bonus si tiene nombre (spots completos tienen más peso)
+    if (spot.name) {
+      score += 5;
+    }
+    
+    // Bonus si tiene fotos
+    if (spot.photos && spot.photos.length > 0) {
+      score += 3;
+    }
   }
   
   return score;

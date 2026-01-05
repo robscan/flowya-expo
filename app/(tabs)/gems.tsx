@@ -3,17 +3,16 @@
  * Scope 9: Gems Screen - Lo que está brillando ahora
  * 
  * Principios:
- * - Layout tipo feed/cards
- * - Header con estilo glass
- * - Spots destacados (recientes, populares, sugeridos)
- * - Cards con efecto glass para cada gem
- * - Paths sugeridos (como contexto secundario, según definición: como contexto no foco)
+ * - Header scrollable (igual que Home)
+ * - Sliders horizontales de Spots: Featured, Recent, Suggested
+ * - Lista vertical de Paths sugeridos (menor jerarquía)
  * - El foco siempre está en Spots, no en recorrer Paths completos
  */
 
-import { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
+import * as Location from 'expo-location';
 
 import { Colors } from '@/constants/theme';
 import { spacing } from '@/constants/spacing';
@@ -26,23 +25,97 @@ import { useSpot } from '@/contexts/SpotContext';
 import { usePath } from '@/contexts/PathContext';
 import { useSaved } from '@/contexts/SavedContext';
 import { useFlow } from '@/contexts/FlowContext';
+import { useOverlay } from '@/contexts/OverlayContext';
 import { getAllGems, getSuggestedPaths } from '@/utils/gemsLogic';
-import { GemsSpotCard } from '@/components/GemsSpotCard';
-import { GemsPathCard } from '@/components/GemsPathCard';
-import { SpotDetailSheet } from '@/components/SpotDetailSheet';
+import { getFlowSpots } from '@/data/flows';
+import { SpotCard } from '@/components/SpotCard';
+import { FlowCard } from '@/components/FlowCard';
 import { Spot } from '@/data/spots';
+import { Flow } from '@/data/flows';
+import { calculateDistanceToSpot } from '@/utils/distance';
+import { fontSize, lineHeight, fontFamilyMedium } from '@/constants/typography';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.75, 400); // 75% of screen width, max 400px for desktop
 
 export default function GemsScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const navigation = useNavigation();
+  const { setIsTabBarLabelsVisible } = useOverlay();
   const colors = Colors[colorScheme ?? 'light'];
-  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-  const [isDetailSheetVisible, setIsDetailSheetVisible] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const lastScrollY = useRef(0);
+  const isLabelsVisible = useRef(true);
 
   const { spots, isLoading: spotsLoading } = useSpot();
   const { paths, isLoading: pathsLoading } = usePath();
   const { likedSpots, savedSpots } = useSaved();
   const { startFlow } = useFlow();
+
+  // Enable LayoutAnimation on Android
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  // Handle scroll to show/hide tab bar labels
+  const handleScroll = (event: any) => {
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+    const scrollDifference = 10; // Threshold for scroll detection
+
+    if (currentScrollY > lastScrollY.current + scrollDifference && isLabelsVisible.current) {
+      // Scrolling down - hide labels
+      isLabelsVisible.current = false;
+      LayoutAnimation.configureNext({
+        duration: 300,
+        create: { type: 'easeInEaseOut', property: 'opacity' },
+        update: { type: 'easeInEaseOut', property: 'opacity' },
+        delete: { type: 'easeInEaseOut', property: 'opacity' },
+      });
+      setIsTabBarLabelsVisible(false);
+      navigation.setOptions({
+        tabBarShowLabel: false,
+      });
+    } else if (currentScrollY < lastScrollY.current - scrollDifference && !isLabelsVisible.current) {
+      // Scrolling up - show labels
+      isLabelsVisible.current = true;
+      LayoutAnimation.configureNext({
+        duration: 300,
+        create: { type: 'easeInEaseOut', property: 'opacity' },
+        update: { type: 'easeInEaseOut', property: 'opacity' },
+        delete: { type: 'easeInEaseOut', property: 'opacity' },
+      });
+      setIsTabBarLabelsVisible(true);
+      navigation.setOptions({
+        tabBarShowLabel: true,
+      });
+    }
+
+    lastScrollY.current = currentScrollY;
+  };
+
+  // Get user location
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Location permissions denied');
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } catch (error) {
+        console.error('Error getting location:', error);
+      }
+    })();
+  }, []);
 
   // Calcular Gems
   const gems = getAllGems(spots, likedSpots, savedSpots, {
@@ -61,108 +134,126 @@ export default function GemsScreen() {
 
   // Manejar selección de Spot
   const handleSpotPress = (spot: Spot) => {
-    setSelectedSpot(spot);
-    setIsDetailSheetVisible(true);
+    router.push(`/spot-detail?id=${spot.id}`);
   };
 
-  const handleCloseDetailSheet = () => {
-    setIsDetailSheetVisible(false);
-    setSelectedSpot(null);
-  };
+  // Render horizontal slider of spots
+  const renderSpotSlider = (title: string, gemSpots: typeof gems.featured) => {
+    if (gemSpots.length === 0) return null;
 
-  // Renderizar sección de Spots
-  const renderSpotSection = (title: string, gemSpots: typeof gems.featured, showIfEmpty: boolean = false) => {
-    if (gemSpots.length === 0 && !showIfEmpty) {
-      return null;
-    }
+    const spots = gemSpots.map((gem) => gem.spot);
 
     return (
       <View style={styles.section}>
-        <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.md }]}>
-          {title}
-        </Text>
-        {gemSpots.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={[textStyles.body, { color: colors.icon }]}>
-              No hay {title.toLowerCase()} disponibles
-            </Text>
-          </View>
-        ) : (
-          gemSpots.map((gemSpot) => (
-            <GemsSpotCard
-              key={gemSpot.spot.id}
-              gemSpot={gemSpot}
-              onPress={() => handleSpotPress(gemSpot.spot)}
-            />
-          ))
-        )}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+        <FlatList
+          data={spots}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sliderContent}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: spot }) => {
+            const distance = calculateDistanceToSpot(userLocation, spot.location);
+            return (
+              <View style={[styles.sliderCard, { width: CARD_WIDTH }]}>
+                <SpotCard
+                  spot={spot}
+                  distance={distance || undefined}
+                  onPress={() => handleSpotPress(spot)}
+                  onMapPress={() => handleSpotPress(spot)}
+                  inSlider={true}
+                />
+              </View>
+            );
+          }}
+          snapToInterval={CARD_WIDTH + spacing.sm}
+          decelerationRate="fast"
+          pagingEnabled={false}
+        />
       </View>
     );
   };
 
-  // Renderizar sección de Paths sugeridos
-  const renderSuggestedPaths = () => {
-    if (suggestedPaths.length === 0) {
-      return null;
-    }
+  // Render paths list (vertical)
+  const renderPathsList = (title: string, paths: Flow[]) => {
+    if (paths.length === 0) return null;
 
     return (
       <View style={styles.section}>
-        <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.md }]}>
-          Paths sugeridos
-        </Text>
-        {suggestedPaths.map((gemPath) => (
-          <GemsPathCard
-            key={gemPath.path.id}
-            gemPath={gemPath}
-            onPress={() => {
-              // Iniciar Flow desde Path sugerido
-              startFlow(gemPath.path.id);
-            }}
-          />
-        ))}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+        <View style={styles.pathsList}>
+          {paths.map((path) => {
+            const distance = calculateDistanceToSpot(
+              userLocation,
+              spots.find((s) => s.id === path.spots[0])?.location || { latitude: 0, longitude: 0 }
+            );
+            return (
+              <FlowCard
+                key={path.id}
+                flow={path}
+                spots={spots}
+                distance={distance || undefined}
+                onPress={() => {
+                  startFlow(path.id);
+                }}
+              />
+            );
+          })}
+        </View>
       </View>
     );
   };
+
+  // Get paths from suggestedPaths
+  const suggestedPathsList = suggestedPaths.map((gem) => gem.path);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header con estilo glass */}
-      <GlassView style={styles.header} intensity="light" opacity="medium">
-        <View style={styles.headerContent}>
-          <Text style={[textStyles.heading3, { color: colors.text }]}>Gems</Text>
-          <TouchableOpacity
-            onPress={handleProfilePress}
-            style={iconTouchableContainer.base}
-            activeOpacity={0.7}>
-            <Icon name="profile" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-        <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs }]}>
-          Lo que está brillando ahora
-        </Text>
-      </GlassView>
-
-      {/* Contenido */}
       {isLoading ? (
         <View style={styles.loadingState}>
-          <Text style={[textStyles.body, { color: colors.icon }]}>Cargando...</Text>
+          <Text style={[textStyles.body, { color: colors.icon }]}>Loading...</Text>
         </View>
       ) : (
-        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-          {renderSpotSection('Destacados', gems.featured)}
-          {renderSpotSection('Recientes', gems.recent)}
-          {renderSpotSection('Sugeridos', gems.suggested)}
-          {renderSuggestedPaths()}
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}>
+          {/* Header inside ScrollView (scrolls) */}
+          <View
+            style={[
+              styles.header,
+              {
+                borderBottomColor:
+                  colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              },
+            ]}>
+            <View style={styles.headerContent}>
+              <Text style={[textStyles.heading3, { color: colors.text }]}>Gems</Text>
+              <TouchableOpacity
+                onPress={handleProfilePress}
+                style={iconTouchableContainer.base}
+                activeOpacity={0.7}>
+                <Icon name="profile" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Content */}
+          <View style={styles.gemsContent}>
+            {/* Sliders de spots */}
+            {renderSpotSlider('Featured - Spots', gems.featured)}
+            {renderSpotSlider('Recent - Spots', gems.recent)}
+            {renderSpotSlider('Suggested - Spots', gems.suggested)}
+
+            {/* Lista vertical de paths sugeridos */}
+            {renderPathsList('Suggested - Paths', suggestedPathsList)}
+          </View>
         </ScrollView>
       )}
 
       {/* Spot Detail Sheet */}
-      <SpotDetailSheet
-        spot={selectedSpot}
-        visible={isDetailSheetVisible}
-        onClose={handleCloseDetailSheet}
-      />
     </View>
   );
 }
@@ -176,7 +267,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     paddingHorizontal: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginBottom: spacing.md,
   },
   headerContent: {
     flexDirection: 'row',
@@ -187,14 +278,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  gemsContent: {
+    // No paddingHorizontal - se aplica en sectionTitle, sliderContent y pathsList
   },
   section: {
     marginBottom: spacing.xl,
   },
-  emptyState: {
-    padding: spacing.md,
-    alignItems: 'center',
+  sectionTitle: {
+    fontFamily: fontFamilyMedium,
+    fontSize: fontSize.xl,
+    lineHeight: lineHeight.xl,
+    fontWeight: '600',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  sliderContent: {
+    paddingHorizontal: spacing.md,
+    paddingRight: spacing.lg,
+  },
+  sliderCard: {
+    marginRight: spacing.sm, // 16px
+  },
+  pathsList: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm, // 16px
   },
   loadingState: {
     flex: 1,

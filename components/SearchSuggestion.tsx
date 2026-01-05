@@ -16,17 +16,19 @@ import { spacing } from '@/constants/spacing';
 import { textStyles } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Icon } from '@/components/ui/Icon';
+import { formatDistance } from '@/utils/distance';
 
 interface SearchSuggestionProps {
   name: string;
   type: 'spot' | 'path';
   onPress: () => void;
+  distance?: number; // Distance in meters (optional)
 }
 
-export function SearchSuggestion({ name, type, onPress }: SearchSuggestionProps) {
+export function SearchSuggestion({ name, type, onPress, distance }: SearchSuggestionProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const iconName = type === 'spot' ? 'map' : 'explore';
+  const iconName = type === 'spot' ? 'place' : 'explore';
 
   return (
     <TouchableOpacity
@@ -34,9 +36,16 @@ export function SearchSuggestion({ name, type, onPress }: SearchSuggestionProps)
       style={[styles.container, { backgroundColor: colors.background + '80' }]}
       activeOpacity={0.7}>
       <Icon name={iconName} size={20} color={colors.icon} style={styles.icon} />
-      <Text style={[textStyles.body, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-        {name}
-      </Text>
+      <View style={styles.textContainer}>
+        <Text style={[textStyles.body, { color: colors.text }]} numberOfLines={1}>
+          {name}
+        </Text>
+        {distance !== undefined && (
+          <Text style={[textStyles.caption, { color: colors.icon, marginTop: 2 }]}>
+            {formatDistance(distance)}
+          </Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -51,6 +60,9 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: spacing.sm,
+  },
+  textContainer: {
+    flex: 1,
   },
 });
 

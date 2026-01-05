@@ -1,10 +1,12 @@
-# Estado Final - Mini Tours MVP - Fase V4
+# Estado Final - FLOWYA MVP - Fase V4
+
+**Nota histórica:** Este documento corresponde al trabajo realizado cuando el proyecto se llamaba "Mini Tours". El proyecto ahora se llama FLOWYA, pero el trabajo realizado sigue siendo válido.
 
 Fecha: 2024-12-19
 
 ## Resumen Ejecutivo
 
-Se ha completado la construcción del MVP de Mini Tours según el plan definido en `mini_tours_mvp_plan_e4601459.plan`. Todos los scopes del 1 al 11 han sido implementados completamente, con todas las funcionalidades core, navegación, contextos, y pantallas principales funcionando.
+Se ha completado la construcción del MVP según el plan definido en `definitions/V4/mini_tours_mvp_plan_e4601459.plan`. Todos los scopes del 1 al 11 han sido implementados completamente, con todas las funcionalidades core, navegación, contextos, y pantallas principales funcionando.
 
 ## Scopes Completados
 

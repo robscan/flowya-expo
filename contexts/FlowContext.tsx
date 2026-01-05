@@ -23,6 +23,7 @@ export interface FlowState {
   currentSpotIndex: number;
   startedAt: Date | null;
   pausedAt: Date | null;
+  isMinimized: boolean; // Estado de minimizado
 }
 
 interface FlowContextType {
@@ -34,6 +35,8 @@ interface FlowContextType {
   pauseFlow: () => void;
   resumeFlow: () => void;
   endFlow: () => void;
+  minimizeFlow: () => void; // Minimizar FlowScreen
+  expandFlow: () => void; // Expandir FlowScreen desde minimizado
   nextSpot: () => void;
   previousSpot: () => void;
   goToSpot: (spotIndex: number) => void;
@@ -45,13 +48,14 @@ const defaultFlowState: FlowState = {
   currentSpotIndex: 0,
   startedAt: null,
   pausedAt: null,
+  isMinimized: false,
 };
 
 const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
 export function FlowProvider({ children }: { children: ReactNode }) {
   const [flowState, setFlowState] = useState<FlowState>(defaultFlowState);
-  const { getPathById } = usePath();
+  const { getFlowById } = usePath();
   const { spots } = useSpot();
 
   // Calcular spot IDs actual y siguiente basado en el estado
@@ -64,8 +68,8 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    const path = getPathById(flowState.currentPathId);
-    if (!path || path.spots.length === 0) {
+    const flow = getFlowById(flowState.currentPathId);
+    if (!flow || flow.spots.length === 0) {
       return {
         currentSpotId: null,
         nextSpotId: null,
@@ -74,13 +78,13 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     }
 
     const currentIndex = flowState.currentSpotIndex;
-    const totalSpots = path.spots.length;
+    const totalSpots = flow.spots.length;
 
     // Calcular currentSpotId
-    const currentSpotId = currentIndex < totalSpots ? path.spots[currentIndex] : null;
+    const currentSpotId = currentIndex < totalSpots ? flow.spots[currentIndex] : null;
 
     // Calcular nextSpotId
-    const nextSpotId = currentIndex + 1 < totalSpots ? path.spots[currentIndex + 1] : null;
+    const nextSpotId = currentIndex + 1 < totalSpots ? flow.spots[currentIndex + 1] : null;
 
     // Calcular progreso (0-100)
     const progress = totalSpots > 0 ? Math.round((currentIndex / totalSpots) * 100) : 0;
@@ -90,7 +94,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       nextSpotId,
       progress,
     };
-  }, [flowState.currentPathId, flowState.currentSpotIndex, flowState.status, getPathById]);
+  }, [flowState.currentPathId, flowState.currentSpotIndex, flowState.status, getFlowById]);
 
   const startFlow = (pathId: string) => {
     setFlowState({
@@ -99,6 +103,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       currentSpotIndex: 0,
       startedAt: new Date(),
       pausedAt: null,
+      isMinimized: false,
     });
   };
 
@@ -124,6 +129,24 @@ export function FlowProvider({ children }: { children: ReactNode }) {
 
   const endFlow = () => {
     setFlowState(defaultFlowState);
+  };
+
+  const minimizeFlow = () => {
+    if (flowState.status === 'active' || flowState.status === 'paused') {
+      setFlowState({
+        ...flowState,
+        isMinimized: true,
+      });
+    }
+  };
+
+  const expandFlow = () => {
+    if (flowState.status === 'active' || flowState.status === 'paused') {
+      setFlowState({
+        ...flowState,
+        isMinimized: false,
+      });
+    }
   };
 
   const nextSpot = () => {
@@ -162,6 +185,8 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     pauseFlow,
     resumeFlow,
     endFlow,
+    minimizeFlow,
+    expandFlow,
     nextSpot,
     previousSpot,
     goToSpot,

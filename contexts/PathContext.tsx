@@ -1,112 +1,126 @@
 /**
- * PathContext - Gestión de estado de Paths
- * Scope 3.2: Estado de Paths y funciones de gestión
+ * PathContext - Gestión de estado de Flows (anteriormente Paths)
+ * Scope 3.2: Estado de Flows y funciones de gestión
  * 
  * Funciones:
- * - crearPath
- * - obtenerPaths
- * - guardarPath
- * - Generación sugerida de Paths
+ * - crearFlow
+ * - obtenerFlows
+ * - guardarFlow
+ * - Generación sugerida de Flows
+ * 
+ * NOTA: Se mantiene el nombre PathContext para compatibilidad, pero internamente usa Flow
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Path, MovementMode, calculateEstimatedDuration } from '@/data/paths';
-import { mockPaths } from '@/data/paths';
+import { Flow, MovementMode, calculateEstimatedDuration } from '@/data/flows';
+import { mockFlows } from '@/data/flows';
 
-const STORAGE_KEY = '@mini_tours_paths';
+const STORAGE_KEY = '@mini_tours_flows';
 
 interface PathContextType {
-  paths: Path[];
+  flows: Flow[];
   isLoading: boolean;
-  getPathById: (id: string) => Path | undefined;
+  getFlowById: (id: string) => Flow | undefined;
+  createFlow: (
+    spotIds: string[],
+    movementMode: MovementMode,
+    title?: string,
+    description?: string
+  ) => Flow;
+  updateFlow: (id: string, updates: Partial<Flow>) => void;
+  deleteFlow: (id: string) => void;
+  suggestFlowFromSpots: (spotIds: string[]) => Flow | null;
+  // Aliases para compatibilidad temporal
+  paths: Flow[];
+  getPathById: (id: string) => Flow | undefined;
   createPath: (
     spotIds: string[],
     movementMode: MovementMode,
     title?: string,
     description?: string
-  ) => Path;
-  updatePath: (id: string, updates: Partial<Path>) => void;
+  ) => Flow;
+  updatePath: (id: string, updates: Partial<Flow>) => void;
   deletePath: (id: string) => void;
-  suggestPathFromSpots: (spotIds: string[]) => Path | null;
+  suggestPathFromSpots: (spotIds: string[]) => Flow | null;
 }
 
 const PathContext = createContext<PathContextType | undefined>(undefined);
 
 export function PathProvider({ children }: { children: ReactNode }) {
-  const [paths, setPaths] = useState<Path[]>([]);
+  const [flows, setFlows] = useState<Flow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cargar paths desde AsyncStorage
+  // Cargar flows desde AsyncStorage
   useEffect(() => {
-    loadPaths();
+    loadFlows();
   }, []);
 
-  // Guardar paths en AsyncStorage cuando cambien
+  // Guardar flows en AsyncStorage cuando cambien
   useEffect(() => {
     if (!isLoading) {
-      savePaths(paths);
+      saveFlows(flows);
     }
-  }, [paths, isLoading]);
+  }, [flows, isLoading]);
 
-  const loadPaths = async () => {
+  const loadFlows = async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         // Convertir fechas
-        const pathsWithDates = parsed.map((path: any) => ({
-          ...path,
-          createdAt: new Date(path.createdAt),
-          updatedAt: new Date(path.updatedAt),
-          metadata: path.metadata
+        const flowsWithDates = parsed.map((flow: any) => ({
+          ...flow,
+          createdAt: new Date(flow.createdAt),
+          updatedAt: new Date(flow.updatedAt),
+          metadata: flow.metadata
             ? {
-                ...path.metadata,
-                suggestedAt: path.metadata.suggestedAt ? new Date(path.metadata.suggestedAt) : undefined,
-                acceptedAt: path.metadata.acceptedAt ? new Date(path.metadata.acceptedAt) : undefined,
-                editedAt: path.metadata.editedAt ? new Date(path.metadata.editedAt) : undefined,
+                ...flow.metadata,
+                suggestedAt: flow.metadata.suggestedAt ? new Date(flow.metadata.suggestedAt) : undefined,
+                acceptedAt: flow.metadata.acceptedAt ? new Date(flow.metadata.acceptedAt) : undefined,
+                editedAt: flow.metadata.editedAt ? new Date(flow.metadata.editedAt) : undefined,
               }
             : undefined,
         }));
-        setPaths(pathsWithDates);
+        setFlows(flowsWithDates);
       } else {
         // Usar mock data si no hay datos guardados
-        setPaths(mockPaths);
+        setFlows(mockFlows);
       }
     } catch (error) {
-      console.error('Error loading paths:', error);
+      console.error('Error loading flows:', error);
       // Fallback a mock data
-      setPaths(mockPaths);
+      setFlows(mockFlows);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const savePaths = async (pathsToSave: Path[]) => {
+  const saveFlows = async (flowsToSave: Flow[]) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(pathsToSave));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(flowsToSave));
     } catch (error) {
-      console.error('Error saving paths:', error);
+      console.error('Error saving flows:', error);
     }
   };
 
-  const getPathById = (id: string): Path | undefined => {
-    return paths.find((path) => path.id === id);
+  const getFlowById = (id: string): Flow | undefined => {
+    return flows.find((flow) => flow.id === id);
   };
 
-  const createPath = (
+  const createFlow = (
     spotIds: string[],
     movementMode: MovementMode,
     title?: string,
     description?: string
-  ): Path => {
+  ): Flow => {
     const now = new Date();
     const estimatedDuration = calculateEstimatedDuration(spotIds.length, movementMode);
 
-    const newPath: Path = {
-      id: `path-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title: title || `Path with ${spotIds.length} spots`,
+    const newFlow: Flow = {
+      id: `flow-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title: title || `Flow with ${spotIds.length} spots`,
       description,
       estimatedDuration,
       movementMode,
@@ -115,37 +129,37 @@ export function PathProvider({ children }: { children: ReactNode }) {
       updatedAt: now,
     };
 
-    setPaths((prev) => [...prev, newPath]);
-    return newPath;
+    setFlows((prev) => [...prev, newFlow]);
+    return newFlow;
   };
 
-  const updatePath = (id: string, updates: Partial<Path>) => {
-    setPaths((prev) =>
-      prev.map((path) =>
-        path.id === id
-          ? { ...path, ...updates, updatedAt: new Date() }
-          : path
+  const updateFlow = (id: string, updates: Partial<Flow>) => {
+    setFlows((prev) =>
+      prev.map((flow) =>
+        flow.id === id
+          ? { ...flow, ...updates, updatedAt: new Date() }
+          : flow
       )
     );
   };
 
-  const deletePath = (id: string) => {
-    setPaths((prev) => prev.filter((path) => path.id !== id));
+  const deleteFlow = (id: string) => {
+    setFlows((prev) => prev.filter((flow) => flow.id !== id));
   };
 
-  // Generar Path sugerido desde array de Spot IDs
-  const suggestPathFromSpots = (spotIds: string[]): Path | null => {
+  // Generar Flow sugerido desde array de Spot IDs
+  const suggestFlowFromSpots = (spotIds: string[]): Flow | null => {
     if (spotIds.length < 2) {
-      return null; // Necesitamos al menos 2 spots para un path
+      return null; // Necesitamos al menos 2 spots para un flow
     }
 
     const now = new Date();
     const estimatedDuration = calculateEstimatedDuration(spotIds.length, 'walking');
 
-    const suggestedPath: Path = {
-      id: `path-suggested-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title: `Suggested path with ${spotIds.length} spots`,
-      description: `A path connecting ${spotIds.length} spots`,
+    const suggestedFlow: Flow = {
+      id: `flow-suggested-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title: `Suggested flow with ${spotIds.length} spots`,
+      description: `A flow connecting ${spotIds.length} spots`,
       estimatedDuration,
       movementMode: 'walking',
       spots: spotIds,
@@ -157,12 +171,26 @@ export function PathProvider({ children }: { children: ReactNode }) {
       updatedAt: now,
     };
 
-    return suggestedPath;
+    return suggestedFlow;
   };
 
+  // Aliases para compatibilidad temporal
+  const getPathById = getFlowById;
+  const createPath = createFlow;
+  const updatePath = updateFlow;
+  const deletePath = deleteFlow;
+  const suggestPathFromSpots = suggestFlowFromSpots;
+
   const value: PathContextType = {
-    paths,
+    flows,
     isLoading,
+    getFlowById,
+    createFlow,
+    updateFlow,
+    deleteFlow,
+    suggestFlowFromSpots,
+    // Aliases para compatibilidad
+    paths: flows,
     getPathById,
     createPath,
     updatePath,

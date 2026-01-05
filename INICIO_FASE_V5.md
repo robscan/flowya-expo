@@ -1,4 +1,6 @@
-# Guía de Inicio - Fase V5
+# Guía de Inicio - FLOWYA V1.0
+
+**Nota histórica:** Este documento corresponde al trabajo realizado cuando el proyecto se llamaba "Mini Tours". El proyecto ahora se llama FLOWYA, pero el trabajo realizado sigue siendo válido.
 
 **Fecha:** 2024-12-19  
 **Estado anterior:** Fase V4 completada ✅
@@ -7,8 +9,9 @@
 
 1. **ESTADO_FINAL_FASE_V4.md** - Estado detallado completo del proyecto
 2. **RESUMEN_FASE_V4.md** - Resumen ejecutivo de logros
-3. **definitions/mini_tours_mvp_plan_e4601459.plan** - Plan original completado
+3. **definitions/V4/mini_tours_mvp_plan_e4601459.plan** - Plan original completado (histórico)
 4. **DEBUG_CHECKLIST.md** - Checklist de debug realizado
+5. **definitions/FLOWYA V1.0/FLOWYA Product Definition V1.0.md** - Definición actual del producto
 
 ## ✅ Lo que está Completado (V4)
 
