@@ -28,6 +28,7 @@ import {
   Animated,
   Dimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -71,6 +72,7 @@ export function FlowScreen() {
   
   const [viewMode, setViewMode] = useState<FlowViewMode>('list');
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
 
   const isVisible = (flowState.status === 'active' || flowState.status === 'paused') && !flowState.isMinimized;
   const flow = flowState.currentPathId ? getFlowById(flowState.currentPathId) : null;
@@ -194,30 +196,48 @@ export function FlowScreen() {
     // Detener narrations antes de cerrar
     narration.stopNarration();
     
-    // Mostrar diálogo para guardar Flow
-    Alert.alert(
-      'Close flow',
-      'Do you want to save this flow before closing?',
-      [
-        {
-          text: 'Close without saving',
-          style: 'cancel',
-          onPress: () => {
-            endFlow();
-            router.back();
+    // En web/iOS Safari, usar modal personalizado; en móvil nativo, usar Alert.alert
+    if (Platform.OS === 'web') {
+      setShowCloseConfirmModal(true);
+    } else {
+      Alert.alert(
+        'Close flow',
+        'Do you want to save this flow before closing?',
+        [
+          {
+            text: 'Close without saving',
+            style: 'cancel',
+            onPress: () => {
+              endFlow();
+              router.back();
+            },
           },
-        },
-        {
-          text: 'Save flow',
-          onPress: () => {
-            toggleSaveFlow(flow.id);
-            endFlow();
-            router.back();
+          {
+            text: 'Save flow',
+            onPress: () => {
+              toggleSaveFlow(flow.id);
+              endFlow();
+              router.back();
+            },
           },
-        },
-      ],
-      { cancelable: true }
-    );
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const handleCloseWithoutSaving = () => {
+    setShowCloseConfirmModal(false);
+    endFlow();
+    router.back();
+  };
+
+  const handleCloseAndSave = () => {
+    if (!flow) return;
+    setShowCloseConfirmModal(false);
+    toggleSaveFlow(flow.id);
+    endFlow();
+    router.back();
   };
 
   const handleNext = () => {
@@ -574,6 +594,50 @@ export function FlowScreen() {
         )}
         {renderControls()}
       </Animated.View>
+      
+      {/* Modal de confirmación para web/iOS Safari */}
+      <Modal
+        visible={showCloseConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCloseConfirmModal(false)}>
+        <View style={styles.modalOverlay}>
+          <GlassView style={styles.modalContent} intensity="medium" opacity="strong">
+            <Text style={[textStyles.heading3, { color: colors.text, marginBottom: spacing.md }]}>
+              Close flow
+            </Text>
+            <Text style={[textStyles.body, { color: colors.icon, marginBottom: spacing.lg }]}>
+              Do you want to save this flow before closing?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel, { borderColor: colors.icon }]}
+                onPress={() => setShowCloseConfirmModal(false)}
+                activeOpacity={0.7}>
+                <Text style={[textStyles.bodyMedium, { color: colors.text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleCloseWithoutSaving}
+                activeOpacity={0.7}>
+                <Text style={[textStyles.bodyMedium, { color: colors.text }]}>
+                  Close without saving
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.tint }]}
+                onPress={handleCloseAndSave}
+                activeOpacity={0.7}>
+                <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>
+                  Save flow
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </GlassView>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -755,6 +819,37 @@ const styles = StyleSheet.create({
   controlButton: {
     minWidth: 48,
     minHeight: 48,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+  },
+  modalButtons: {
+    gap: spacing.sm,
+  },
+  modalButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  modalButtonCancel: {
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  modalButtonSecondary: {
+    backgroundColor: 'transparent',
   },
 });
 

@@ -18,6 +18,7 @@ import {
   View,
   Text,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { Spot } from '@/data/spots';
 import { GOOGLE_MAPS_WEB_API_KEY } from '@/utils/mapsConfig';
 
@@ -160,7 +161,15 @@ export const MapViewWeb = forwardRef<MapViewWebRef, MapViewWebProps>(({
   // Cargar Google Maps y crear instancia
   useEffect(() => {
     if (!GOOGLE_MAPS_WEB_API_KEY) {
-      setError('Google Maps API key not configured. Please set EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY in .env');
+      const errorMsg = 'Google Maps API key not configured. Please set EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY in your .env file or Vercel environment variables.';
+      setError(errorMsg);
+      if (__DEV__) {
+        console.error('MapViewWeb: Google Maps API key missing', {
+          hasEnvVar: !!process.env.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY,
+          keyLength: GOOGLE_MAPS_WEB_API_KEY.length,
+          hasConstants: !!Constants?.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY,
+        });
+      }
       return;
     }
 
