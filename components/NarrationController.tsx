@@ -15,10 +15,12 @@ import { useEffect } from 'react';
 import { useNarration } from '@/contexts/NarrationContext';
 import { useFlow } from '@/contexts/FlowContext';
 import { usePath } from '@/contexts/PathContext';
+import { useSpot } from '@/contexts/SpotContext';
 import {
   getRandomNarrationBySpotAndType,
   getRandomPathContextNarration,
 } from '@/data/narrations';
+import { generateNarrationText } from '@/utils/narrationGenerator';
 
 /**
  * Componente invisible que orquesta las narrations
@@ -57,11 +59,31 @@ export function useNarrationTriggers() {
   const narration = useNarration();
   const { flowState, currentSpotId, nextSpotId } = useFlow();
   const { getPathById } = usePath();
+  const { getSpotById } = useSpot();
 
   /**
    * Disparar narration de tipo "approaching" (anticipation)
    */
   const triggerApproaching = (spotId: string) => {
+    const spot = getSpotById(spotId);
+    
+    // Intentar usar narrationGenerator primero (sistema híbrido)
+    if (spot) {
+      const narrationText = generateNarrationText(spot, 'anticipation');
+      if (narrationText) {
+        const narrationData = {
+          id: `narration-${spotId}-anticipation-${Date.now()}`,
+          spotId,
+          type: 'anticipation' as const,
+          text: narrationText,
+          duration: Math.ceil(narrationText.length / 10), // Estimación: ~10 caracteres por segundo
+        };
+        narration.triggerNarration('approaching', narrationData);
+        return;
+      }
+    }
+    
+    // Fallback a sistema anterior
     const narrationData = getRandomNarrationBySpotAndType(spotId, 'anticipation');
     if (narrationData) {
       narration.triggerNarration('approaching', narrationData);
@@ -72,6 +94,25 @@ export function useNarrationTriggers() {
    * Disparar narration de tipo "arriving" (presence)
    */
   const triggerArriving = (spotId: string) => {
+    const spot = getSpotById(spotId);
+    
+    // Intentar usar narrationGenerator primero (sistema híbrido)
+    if (spot) {
+      const narrationText = generateNarrationText(spot, 'presence');
+      if (narrationText) {
+        const narrationData = {
+          id: `narration-${spotId}-presence-${Date.now()}`,
+          spotId,
+          type: 'presence' as const,
+          text: narrationText,
+          duration: Math.ceil(narrationText.length / 10), // Estimación: ~10 caracteres por segundo
+        };
+        narration.triggerNarration('arriving', narrationData);
+        return;
+      }
+    }
+    
+    // Fallback a sistema anterior
     const narrationData = getRandomNarrationBySpotAndType(spotId, 'presence');
     if (narrationData) {
       narration.triggerNarration('arriving', narrationData);
@@ -82,6 +123,25 @@ export function useNarrationTriggers() {
    * Disparar narration de tipo "leaving" (transition)
    */
   const triggerLeaving = (spotId: string) => {
+    const spot = getSpotById(spotId);
+    
+    // Intentar usar narrationGenerator primero (sistema híbrido)
+    if (spot) {
+      const narrationText = generateNarrationText(spot, 'transition');
+      if (narrationText) {
+        const narrationData = {
+          id: `narration-${spotId}-transition-${Date.now()}`,
+          spotId,
+          type: 'transition' as const,
+          text: narrationText,
+          duration: Math.ceil(narrationText.length / 10), // Estimación: ~10 caracteres por segundo
+        };
+        narration.triggerNarration('leaving', narrationData);
+        return;
+      }
+    }
+    
+    // Fallback a sistema anterior
     const narrationData = getRandomNarrationBySpotAndType(spotId, 'transition');
     if (narrationData) {
       narration.triggerNarration('leaving', narrationData);
@@ -92,6 +152,7 @@ export function useNarrationTriggers() {
    * Disparar narration de tipo "between" (context)
    */
   const triggerBetween = (pathId: string) => {
+    // Mantener sistema anterior para narrations entre spots
     const narrationData = getRandomPathContextNarration(pathId);
     if (narrationData) {
       narration.triggerNarration('between', narrationData);

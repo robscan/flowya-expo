@@ -25,15 +25,17 @@ interface SearchBarProps {
   placeholder?: string;
   onFocus?: () => void;
   onBlur?: () => void;
+  onSubmitEditing?: () => void;
   autoFocus?: boolean;
 }
 
 export function SearchBar({
   value,
   onChangeText,
-  placeholder = 'Buscar Spots y Paths...',
+  placeholder = 'Search places...',
   onFocus,
   onBlur,
+  onSubmitEditing,
   autoFocus = false,
 }: SearchBarProps) {
   const colorScheme = useColorScheme();
@@ -51,6 +53,7 @@ export function SearchBar({
           placeholderTextColor={colors.icon}
           onFocus={onFocus}
           onBlur={onBlur}
+          onSubmitEditing={onSubmitEditing}
           autoFocus={autoFocus}
           autoCorrect={false}
           autoCapitalize="none"

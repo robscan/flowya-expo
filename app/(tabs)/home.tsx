@@ -4,17 +4,13 @@
  * 
  * Home · Explore: "What can I do here and now?"
  * - Horizontal sliders of spots: Nearby, For You, Recommended
+ * - Horizontal sliders of compact spots: Recently Viewed, Maybe You Like (Global), New (Global)
  * - Path lists with clear titles
  * - Everything organized by location
- * 
- * Home · Map: "I want to understand this place, now or later"
- * - Free map
- * - Visible spots (even distant ones)
- * - Actions: view Spot, save Spot, create Spot, adjust location
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, FlatList, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, FlatList, Dimensions, LayoutAnimation, Platform, UIManager, RefreshControl } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,18 +23,18 @@ import { Icon } from '@/components/ui/Icon';
 import { iconTouchableContainer } from '@/components/ui/Icon';
 import { SpotCard } from '@/components/SpotCard';
 import { SpotCardCompact } from '@/components/SpotCardCompact';
-import { SimpleMapView } from '@/components/SimpleMapView';
-import { CreateSpotModal } from '@/components/CreateSpotModal';
 import { FlowCard } from '@/components/FlowCard';
+import { SpotCardSkeleton, SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { LocationWeatherHeader } from '@/components/LocationWeatherHeader';
 import { useSpot } from '@/contexts/SpotContext';
 import { usePath } from '@/contexts/PathContext';
+import { useSaved } from '@/contexts/SavedContext';
 import { useOverlay } from '@/contexts/OverlayContext';
 import { Spot } from '@/data/spots';
 import { Flow } from '@/data/flows';
 import { calculateDistanceToSpot } from '@/utils/distance';
 import { getWeatherCondition, getWeatherGradientColor, WeatherCondition } from '@/utils/weather';
-
-type HomeTab = 'explore' | 'map';
+import { getFeaturedSpots, getRecentSpots } from '@/utils/gemsLogic';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.75, 400); // 75% of screen width, max 400px for desktop
@@ -48,17 +44,17 @@ export default function HomeScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { setIsTabBarLabelsVisible } = useOverlay();
-  const [activeTab, setActiveTab] = useState<HomeTab>('explore');
-  const [createSpotLocation, setCreateSpotLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [isCreateSpotModalVisible, setIsCreateSpotModalVisible] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [weatherCondition, setWeatherCondition] = useState<WeatherCondition>('default');
   const colors = Colors[colorScheme ?? 'light'];
   const lastScrollY = useRef(0);
   const isLabelsVisible = useRef(true);
 
-  const { spots, isLoading: spotsLoading, createSpot } = useSpot();
-  const { paths, isLoading: pathsLoading } = usePath();
+  const { spots, isLoading: spotsLoading, refreshSpots } = useSpot();
+  const { paths, isLoading: pathsLoading, refreshFlows } = usePath();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { likedSpots, savedSpots, timeline } = useSaved();
+  const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   // Enable LayoutAnimation on Android
   useEffect(() => {
@@ -119,22 +115,6 @@ export default function HomeScreen() {
     router.push(`/spot-detail?id=${spot.id}`);
   };
 
-  // Handle Spot creation from map
-  const handleMapLongPress = (location: { latitude: number; longitude: number }) => {
-    setCreateSpotLocation(location);
-    setIsCreateSpotModalVisible(true);
-  };
-
-  const handleCreateSpot = (spotData: Omit<Spot, 'id' | 'createdAt' | 'updatedAt'>) => {
-    createSpot(spotData);
-    // Don't close modal immediately - let CreateSpotModal handle it after showing success message
-  };
-
-  const handleCloseCreateSpotModal = () => {
-    setIsCreateSpotModalVisible(false);
-    setCreateSpotLocation(null);
-  };
-
   // Handle scroll to show/hide tab bar labels
   const handleScroll = (event: any) => {
     const currentScrollY = event.nativeEvent.contentOffset.y;
@@ -171,44 +151,133 @@ export default function HomeScreen() {
     lastScrollY.current = currentScrollY;
   };
 
-  // Organize spots by categories
-  const getNearbySpots = (): Spot[] => {
-    if (!userLocation) return [];
-    
-    return spots
-      .map((spot) => ({
-        spot,
-        distance: calculateDistanceToSpot(userLocation, spot.location) || Infinity,
-      }))
-      .filter((item) => item.distance !== Infinity && item.distance < 5000) // Less than 5km
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 10)
-      .map((item) => item.spot);
-  };
+  // Location to use for filtering (selected or user location)
+  const currentLocation = selectedLocation || userLocation;
 
-  const getRecommendedSpots = (): Spot[] => {
-    // Recommended spots (basic logic for now, can be improved with recommendation logic later)
-    return spots.slice(0, 10);
-  };
+  // Organize spots by categories with priority system to avoid duplicates
+  const getFilteredSpotsByPriority = () => {
+    const usedSpotIds = new Set<string>();
+    const location = currentLocation;
 
-  const getForYouSpots = (): Spot[] => {
-    // Spots for you (basic logic for now, can be improved with personalized logic later)
-    return spots.slice(0, 10);
-  };
+    // 1. Nearby spots (highest priority)
+    const getNearbySpots = (): Spot[] => {
+      if (!location) return [];
+      
+      const nearby = spots
+        .map((spot) => ({
+          spot,
+          distance: calculateDistanceToSpot(location, spot.location) || Infinity,
+        }))
+        .filter((item) => item.distance !== Infinity && item.distance < 5000) // Less than 5km
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10)
+        .map((item) => item.spot)
+        .filter((spot) => !usedSpotIds.has(spot.id));
+      
+      nearby.forEach((spot) => usedSpotIds.add(spot.id));
+      return nearby;
+    };
 
-  const getRecentlyViewedSpots = (): Spot[] => {
-    // Recently viewed spots (basic logic for now)
-    return spots.slice(0, 10);
-  };
+    // 2. For You spots (based on user interactions)
+    const getForYouSpots = (): Spot[] => {
+      // Get spots similar to liked/saved spots (by type)
+      const userLikedTypes = new Set(
+        spots
+          .filter((spot) => likedSpots.includes(spot.id) || savedSpots.includes(spot.id))
+          .map((spot) => spot.type)
+      );
 
-  const getMaybeYouLikeSpots = (): Spot[] => {
-    // Maybe you like (basic logic for now)
-    return spots.slice(0, 10);
+      const forYou = spots
+        .filter((spot) => !usedSpotIds.has(spot.id))
+        .filter((spot) => userLikedTypes.has(spot.type) || likedSpots.includes(spot.id) || savedSpots.includes(spot.id))
+        .slice(0, 10);
+      
+      forYou.forEach((spot) => usedSpotIds.add(spot.id));
+      return forYou;
+    };
+
+    // 3. Recommended spots (popular spots not in previous sections)
+    const getRecommendedSpots = (): Spot[] => {
+      // Calculate popularity score based on likes and saves
+      const scored = spots
+        .filter((spot) => !usedSpotIds.has(spot.id))
+        .map((spot) => {
+          let score = 0;
+          if (likedSpots.includes(spot.id)) score += 3;
+          if (savedSpots.includes(spot.id)) score += 2;
+          if (spot.name) score += 1;
+          if (spot.photos && spot.photos.length > 0) score += 1;
+          return { spot, score };
+        })
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10)
+        .map((item) => item.spot);
+      
+      scored.forEach((spot) => usedSpotIds.add(spot.id));
+      return scored;
+    };
+
+    // 4. Recently viewed spots (from timeline)
+    const getRecentlyViewedSpots = (): Spot[] => {
+      const viewedSpotIds = timeline
+        .filter((entry) => entry.type === 'spot' && entry.action === 'visited')
+        .map((entry) => entry.itemId)
+        .slice(0, 20); // Get last 20 viewed spots
+
+      const recentlyViewed = spots
+        .filter((spot) => !usedSpotIds.has(spot.id) && viewedSpotIds.includes(spot.id))
+        .sort((a, b) => {
+          const aIndex = viewedSpotIds.indexOf(a.id);
+          const bIndex = viewedSpotIds.indexOf(b.id);
+          return aIndex - bIndex; // Most recent first
+        })
+        .slice(0, 10);
+      
+      recentlyViewed.forEach((spot) => usedSpotIds.add(spot.id));
+      return recentlyViewed;
+    };
+
+    // 5. Maybe You Like (global featured spots)
+    const getMaybeYouLikeSpots = (): Spot[] => {
+      const featuredGems = getFeaturedSpots(
+        spots.filter((spot) => !usedSpotIds.has(spot.id)),
+        likedSpots,
+        savedSpots,
+        10
+      );
+      const maybeYouLike = featuredGems.map((gem) => gem.spot);
+      
+      maybeYouLike.forEach((spot) => usedSpotIds.add(spot.id));
+      return maybeYouLike;
+    };
+
+    // 6. New spots (global recent spots)
+    const getNewSpots = (): Spot[] => {
+      const recentGems = getRecentSpots(
+        spots.filter((spot) => !usedSpotIds.has(spot.id)),
+        10
+      );
+      const newSpots = recentGems.map((gem) => gem.spot);
+      
+      newSpots.forEach((spot) => usedSpotIds.add(spot.id));
+      return newSpots;
+    };
+
+    return {
+      nearby: getNearbySpots(),
+      forYou: getForYouSpots(),
+      recommended: getRecommendedSpots(),
+      recentlyViewed: getRecentlyViewedSpots(),
+      maybeYouLike: getMaybeYouLikeSpots(),
+      new: getNewSpots(),
+    };
   };
 
   // Organize flows by proximity
   const getNearbyPaths = (): Flow[] => {
-    if (!userLocation) return paths;
+    const location = currentLocation;
+    if (!location) return paths;
     
     // Sort flows by distance to first spot
     return paths
@@ -219,7 +288,7 @@ export default function HomeScreen() {
         
         if (pathSpots.length === 0) return { path, distance: Infinity };
         
-        const firstSpotDistance = calculateDistanceToSpot(userLocation, pathSpots[0].location) || Infinity;
+        const firstSpotDistance = calculateDistanceToSpot(location, pathSpots[0].location) || Infinity;
         return { path, distance: firstSpotDistance };
       })
       .sort((a, b) => a.distance - b.distance)
@@ -240,7 +309,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.sliderContent}
           keyExtractor={(item) => item.id}
           renderItem={({ item: spot }) => {
-            const distance = calculateDistanceToSpot(userLocation, spot.location);
+            const distance = calculateDistanceToSpot(currentLocation, spot.location);
             return (
               <View style={[styles.sliderCard, { width: CARD_WIDTH }]}>
                 <SpotCard
@@ -275,7 +344,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.sliderContent}
           keyExtractor={(item) => item.id}
           renderItem={({ item: spot }) => {
-            const distance = calculateDistanceToSpot(userLocation, spot.location);
+            const distance = calculateDistanceToSpot(currentLocation, spot.location);
             return (
               <View style={styles.sliderCardCompact}>
                 <SpotCardCompact
@@ -301,14 +370,14 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: spacing.xs / 2 }]}>{title}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: spacing.xs }]}>{title}</Text>
         <Text style={[textStyles.caption, { color: colors.icon, marginTop: 0, marginBottom: spacing.md, paddingHorizontal: spacing.md }]}>
           Curated flows connecting multiple spots
         </Text>
         <View style={styles.pathsList}>
           {paths.map((path) => {
             const distance = calculateDistanceToSpot(
-              userLocation,
+              currentLocation,
               spots.find((s) => s.id === path.spots[0])?.location || { latitude: 0, longitude: 0 }
             );
             return (
@@ -318,8 +387,7 @@ export default function HomeScreen() {
                 spots={spots}
                 distance={distance || undefined}
                 onPress={() => {
-                  // TODO: Navigate to flow detail
-                  console.log('Flow pressed:', path.id);
+                  router.push(`/flow-detail?id=${path.id}`);
                 }}
               />
             );
@@ -329,24 +397,88 @@ export default function HomeScreen() {
     );
   };
 
-  // Render Explore tab
+  // Render Explore content
   const renderExplore = () => {
     const isLoading = spotsLoading || pathsLoading;
 
     if (isLoading) {
       return (
-        <View style={styles.emptyState}>
-          <Text style={[textStyles.body, { color: colors.icon }]}>Loading...</Text>
+        <View style={styles.exploreContent}>
+          <View style={styles.section}>
+            <SkeletonLoader width="40%" height={24} style={{ marginBottom: spacing.md, marginHorizontal: spacing.md }} />
+            <FlatList
+              data={[1, 2, 3]}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sliderContent}
+              keyExtractor={(item) => item.toString()}
+              renderItem={() => (
+                <View style={[styles.sliderCard, { width: CARD_WIDTH }]}>
+                  <SpotCardSkeleton />
+                </View>
+              )}
+            />
+          </View>
+          <View style={styles.section}>
+            <SkeletonLoader width="50%" height={24} style={{ marginBottom: spacing.md, marginHorizontal: spacing.md }} />
+            <FlatList
+              data={[1, 2, 3]}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sliderContent}
+              keyExtractor={(item) => item.toString()}
+              renderItem={() => (
+                <View style={[styles.sliderCard, { width: CARD_WIDTH }]}>
+                  <SpotCardSkeleton />
+                </View>
+              )}
+            />
+          </View>
         </View>
       );
     }
 
-    const nearbySpots = getNearbySpots();
-    const recommendedSpots = getRecommendedSpots();
-    const forYouSpots = getForYouSpots();
-    const recentlyViewedSpots = getRecentlyViewedSpots();
-    const maybeYouLikeSpots = getMaybeYouLikeSpots();
+    const filteredSpots = getFilteredSpotsByPriority();
+    const nearbySpots = filteredSpots.nearby;
+    const forYouSpots = filteredSpots.forYou;
+    const recommendedSpots = filteredSpots.recommended;
+    const recentlyViewedSpots = filteredSpots.recentlyViewed;
+    const maybeYouLikeSpots = filteredSpots.maybeYouLike;
+    const newSpots = filteredSpots.new;
     const nearbyPaths = getNearbyPaths();
+
+    // Verificar si hay contenido para mostrar
+    const hasContent =
+      nearbySpots.length > 0 ||
+      recommendedSpots.length > 0 ||
+      forYouSpots.length > 0 ||
+      recentlyViewedSpots.length > 0 ||
+      maybeYouLikeSpots.length > 0 ||
+      newSpots.length > 0 ||
+      nearbyPaths.length > 0;
+
+    if (!hasContent) {
+      return (
+        <View style={styles.emptyState}>
+          <Icon name="map" size={48} color={colors.icon + '60'} />
+          <Text style={[textStyles.heading4, { color: colors.text, textAlign: 'center', marginTop: spacing.md, marginBottom: spacing.xs }]}>
+            Nothing nearby
+          </Text>
+          <Text style={[textStyles.body, { color: colors.icon, textAlign: 'center', marginBottom: spacing.lg }]}>
+            Explore the map or mark a place
+          </Text>
+          <TouchableOpacity
+            style={[styles.emptyStateButton, { backgroundColor: colors.tint }]}
+            onPress={() => router.push('/(tabs)/map')}
+            activeOpacity={0.8}>
+            <Icon name="map" size={20} color="#fff" />
+            <Text style={[textStyles.bodyMedium, { color: '#fff', marginLeft: spacing.xs }]}>
+              Explore map
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.exploreContent}>
@@ -358,30 +490,10 @@ export default function HomeScreen() {
         {/* Sliders de spots compactos (card pequeña - menor jerarquía) */}
         {recentlyViewedSpots.length > 0 && renderSpotSliderCompact('Recently Viewed - Spots', recentlyViewedSpots)}
         {maybeYouLikeSpots.length > 0 && renderSpotSliderCompact('Maybe You Like - Spots', maybeYouLikeSpots)}
+        {newSpots.length > 0 && renderSpotSliderCompact('New - Spots', newSpots)}
 
         {/* Listados de flows */}
         {nearbyPaths.length > 0 && renderPathsList('Nearby - Flows', nearbyPaths)}
-      </View>
-    );
-  };
-
-  // Render Map tab
-  const renderMap = () => {
-    if (spotsLoading) {
-      return (
-        <View style={styles.emptyState}>
-          <Text style={[textStyles.body, { color: colors.icon }]}>Loading...</Text>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.mapContainer}>
-        <SimpleMapView
-          spots={spots}
-          onSpotPress={handleSpotPress}
-          onLongPress={handleMapLongPress}
-        />
       </View>
     );
   };
@@ -399,175 +511,75 @@ export default function HomeScreen() {
           pointerEvents="none"
         />
       )}
-      {/* Tab content */}
-      {activeTab === 'explore' ? (
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}>
-          {/* Header inside ScrollView (scrolls) */}
-      <View
-        style={[
-          styles.header,
-          {
-            borderBottomColor:
-              colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-          },
-        ]}>
-        <View style={styles.headerContent}>
-          <Text style={[textStyles.heading3, { color: colors.text }]}>FLOWYA - Home</Text>
-          <TouchableOpacity
-            onPress={handleProfilePress}
-            style={iconTouchableContainer.base}
-            activeOpacity={0.7}>
-            <Icon name="profile" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-          {/* Internal tabs inside ScrollView */}
-      <View
-        style={[
-          styles.tabsContainer,
-          {
-            borderBottomColor:
-              colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-          },
-        ]}>
-        <TouchableOpacity
+      {/* Content */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={async () => {
+              setIsRefreshing(true);
+              try {
+                await Promise.all([refreshSpots(), refreshFlows()]);
+              } catch (error) {
+                console.error('Error refreshing:', error);
+              } finally {
+                setIsRefreshing(false);
+              }
+            }}
+            tintColor={colors.tint}
+          />
+        }>
+        {/* Header inside ScrollView (scrolls) */}
+        <View
           style={[
-            styles.tab,
-            activeTab === 'explore' && styles.tabActive,
-            activeTab === 'explore' && { borderBottomColor: colors.tint },
-          ]}
-          onPress={() => setActiveTab('explore')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              textStyles.bodyMedium,
-              { color: activeTab === 'explore' ? colors.tint : colors.icon },
-            ]}>
-            Explore
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'map' && styles.tabActive,
-            activeTab === 'map' && { borderBottomColor: colors.tint },
-          ]}
-          onPress={() => setActiveTab('map')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              textStyles.bodyMedium,
-              { color: activeTab === 'map' ? colors.tint : colors.icon },
-            ]}>
-            Map
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-          {/* Explore content */}
-          {renderExplore()}
-        </ScrollView>
-      ) : (
-        <View style={styles.mapViewContainer}>
-          {/* Fixed header for Map */}
-          <View
-            style={[
-              styles.header,
-              {
-                borderBottomColor:
-                  colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-              },
-            ]}>
-            <View style={styles.headerContent}>
-              <Text style={[textStyles.heading3, { color: colors.text }]}>FLOWYA - Home</Text>
-              <TouchableOpacity
-                onPress={handleProfilePress}
-                style={iconTouchableContainer.base}
-                activeOpacity={0.7}>
-                <Icon name="profile" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Fixed internal tabs for Map */}
-          <View
-            style={[
-              styles.tabsContainer,
-              {
-                borderBottomColor:
-                  colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-              },
-            ]}>
+            styles.header,
+            {
+              borderBottomColor:
+                colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            },
+          ]}>
+          <View style={styles.headerContent}>
+            <Text style={[textStyles.heading3, { color: colors.text }]}>FLOWYA - Home</Text>
             <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'explore' && styles.tabActive,
-                activeTab === 'explore' && { borderBottomColor: colors.tint },
-              ]}
-              onPress={() => setActiveTab('explore')}
+              onPress={handleProfilePress}
+              style={iconTouchableContainer.base}
               activeOpacity={0.7}>
-              <Text
-                style={[
-                  textStyles.bodyMedium,
-                  { color: activeTab === 'explore' ? colors.tint : colors.icon },
-                ]}>
-                Explore
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'map' && styles.tabActive,
-                activeTab === 'map' && { borderBottomColor: colors.tint },
-              ]}
-              onPress={() => setActiveTab('map')}
-              activeOpacity={0.7}>
-              <Text
-                style={[
-                  textStyles.bodyMedium,
-                  { color: activeTab === 'map' ? colors.tint : colors.icon },
-                ]}>
-                Map
-              </Text>
+              <Icon name="profile" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
-
-          {/* Map */}
-          {renderMap()}
         </View>
-      )}
 
-      {/* Spot Detail Sheet */}
+        {/* Location and Weather Header */}
+        <LocationWeatherHeader
+          userLocation={userLocation}
+          selectedLocation={selectedLocation}
+          onLocationChange={(location) => setSelectedLocation(location)}
+          onResetLocation={() => setSelectedLocation(null)}
+        />
 
-      {/* Create Spot Modal */}
-      <CreateSpotModal
-        visible={isCreateSpotModalVisible}
-        location={createSpotLocation}
-        userLocation={userLocation}
-        onClose={handleCloseCreateSpotModal}
-        onCreate={handleCreateSpot}
-      />
+        {/* Explore content */}
+        {renderExplore()}
+      </ScrollView>
 
       {/* Testing Components button - Hidden by default, show only when needed for component/token work */}
       {false && (
-        <TouchableOpacity
-          style={styles.floatingButton}
-          onPress={handleTestingPress}
-          activeOpacity={0.8}>
-          <View
-            style={[
-              styles.floatingButtonContent,
-              { backgroundColor: colors.background, borderColor: colors.icon + '20' },
-            ]}>
-            <Text style={[textStyles.label, { color: colors.text }]}>Testing Components</Text>
-          </View>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={handleTestingPress}
+        activeOpacity={0.8}>
+        <View
+          style={[
+            styles.floatingButtonContent,
+            { backgroundColor: colors.background, borderColor: colors.icon + '20' },
+          ]}>
+          <Text style={[textStyles.label, { color: colors.text }]}>Testing Components</Text>
+        </View>
+      </TouchableOpacity>
       )}
     </View>
   );
@@ -594,9 +606,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingBottom: spacing['2xl'],
   },
-  mapViewContainer: {
-    flex: 1,
-  },
   header: {
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
@@ -608,21 +617,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    paddingHorizontal: spacing.md,
-  },
-  tab: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    marginRight: spacing.md,
-  },
-  tabActive: {
-    // Additional styles applied inline
   },
   exploreContent: {
     paddingTop: spacing.md,
@@ -641,6 +635,7 @@ const styles = StyleSheet.create({
   sliderContent: {
     paddingHorizontal: spacing.md,
     paddingRight: spacing.lg,
+    paddingVertical: spacing.xs, // 8px - Allow shadows to show on cards
   },
   sliderCard: {
     marginRight: spacing.sm, // 16px
@@ -658,9 +653,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing['2xl'],
+    paddingHorizontal: spacing.lg,
   },
-  mapContainer: {
-    flex: 1,
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
   },
   floatingButton: {
     position: 'absolute',
@@ -673,5 +673,19 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 24,
     borderWidth: 1,
+  },
+  scrollIndicator: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 40,
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  scrollIndicatorLeft: {
+    left: 0,
+  },
+  scrollIndicatorRight: {
+    right: 0,
   },
 });

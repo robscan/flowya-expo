@@ -25,8 +25,9 @@ import { iconTouchableContainer } from '@/components/ui/Icon';
 import { SettingsToggle } from '@/components/SettingsToggle';
 import { clearAllStorage } from '@/utils/clearStorage';
 import { useNarration } from '@/contexts/NarrationContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-const PREFERENCES_KEY = '@mini_tours_preferences';
+const PREFERENCES_KEY = '@flowya_preferences';
 
 interface UserPreferences {
   narrationEnabled: boolean;
@@ -45,6 +46,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const colors = Colors[colorScheme ?? 'light'];
   const narration = useNarration();
+  const { user, isAuthenticated, signOut } = useAuth();
   
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
 
@@ -101,27 +103,64 @@ export default function ProfileScreen() {
 
   const handleClearStorage = () => {
     Alert.alert(
-      'Limpiar Datos',
-      '¿Estás seguro de que quieres limpiar todos los datos guardados? Esto incluye spots, paths y datos guardados (likes, saves, etc.). La app se recargará.',
+      'Limpiar todos los datos',
+      '¿Estás seguro de que quieres eliminar todos los datos guardados?\n\nEsto incluye:\n• Todos los lugares creados\n• Todos los flows guardados\n• Tus lugares y flows favoritos\n• Historial de actividad\n\nEsta acción no se puede deshacer. La app se recargará después de limpiar los datos.',
       [
         {
           text: 'Cancelar',
           style: 'cancel',
         },
         {
-          text: 'Limpiar',
+          text: 'Limpiar todo',
           style: 'destructive',
           onPress: async () => {
             try {
               await clearAllStorage();
-              Alert.alert('Éxito', 'Datos limpiados correctamente. Recarga la app para ver los cambios.');
+              Alert.alert('Data cleared', 'All data deleted. App will reload.');
+              // Recargar la app
+              if (typeof window !== 'undefined') {
+                window.location.reload();
+              }
             } catch (error) {
-              Alert.alert('Error', 'No se pudieron limpiar los datos. Revisa la consola para más detalles.');
+              Alert.alert('Error', 'Couldn\'t clear data. Try again.');
             }
           },
         },
       ]
     );
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              router.replace('/(tabs)/home');
+            } catch (error) {
+                  Alert.alert('Error', 'Couldn\'t sign out. Check console for details.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLogin = () => {
+    router.push('/(tabs)/login');
+  };
+
+  const handleSignup = () => {
+    router.push('/(tabs)/signup');
   };
 
   return (
@@ -154,69 +193,144 @@ export default function ProfileScreen() {
         {/* User Profile Card */}
         <View style={styles.section}>
           <GlassView style={styles.card} intensity="medium" opacity="medium">
-            <View style={styles.userCard}>
-              <View style={[styles.avatar, { backgroundColor: colors.tint + '40' }]}>
-                <Icon name="profile" size={32} color={colors.tint} />
+            {isAuthenticated && user ? (
+              <View style={styles.userCard}>
+                <View style={[styles.avatar, { backgroundColor: colors.tint + '40' }]}>
+                  <Icon name="profile" size={32} color={colors.tint} />
+                </View>
+                <View style={styles.userInfo}>
+                  <Text style={[textStyles.heading4, { color: colors.text }]}>
+                    {user.email?.split('@')[0] || 'Usuario'}
+                  </Text>
+                  <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                    {user.email || 'usuario@ejemplo.com'}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.userInfo}>
-                <Text style={[textStyles.heading4, { color: colors.text }]}>Usuario</Text>
-                <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
-                  usuario@ejemplo.com
-                </Text>
+            ) : (
+              <View style={styles.userCard}>
+                <View style={[styles.avatar, { backgroundColor: colors.icon + '20' }]}>
+                  <Icon name="profile" size={32} color={colors.icon} />
+                </View>
+                <View style={styles.userInfo}>
+                  <Text style={[textStyles.heading4, { color: colors.text }]}>Guest</Text>
+                  <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                    Sign in to save preferences
+                  </Text>
+                </View>
               </View>
-            </View>
+            )}
           </GlassView>
         </View>
 
+        {/* Login/Signup Section (solo si no está autenticado) */}
+        {!isAuthenticated && (
+          <View style={styles.section}>
+            <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.md, textTransform: 'uppercase' }]}>
+              ACCOUNT
+            </Text>
+            <GlassView style={styles.card} intensity="medium" opacity="medium">
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={handleLogin}
+                activeOpacity={0.7}>
+                <View style={styles.actionContent}>
+                  <Text style={[textStyles.bodyMedium, { color: colors.text }]}>Sign in</Text>
+                  <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                    Access your account
+                  </Text>
+                </View>
+                <Icon name="profile" size={20} color={colors.icon} />
+              </TouchableOpacity>
+              <View style={[styles.divider, { backgroundColor: colors.icon + '20' }]} />
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={handleSignup}
+                activeOpacity={0.7}>
+                <View style={styles.actionContent}>
+                  <Text style={[textStyles.bodyMedium, { color: colors.text }]}>Create account</Text>
+                  <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                    Create an account to start
+                  </Text>
+                </View>
+                <Icon name="add" size={20} color={colors.icon} />
+              </TouchableOpacity>
+            </GlassView>
+          </View>
+        )}
+
         {/* GENERAL Section */}
         <View style={styles.section}>
-          <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.md, textTransform: 'uppercase' }]}>
-            GENERAL
-          </Text>
+            <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.md, textTransform: 'uppercase' }]}>
+              General
+            </Text>
           <GlassView style={styles.card} intensity="medium" opacity="medium">
             <SettingsToggle
               label="Narration"
               value={preferences.narrationEnabled}
               onValueChange={(value) => handlePreferenceChange('narrationEnabled', value)}
-              description="Audio narrations durante el Flow"
+              description="Audio narrations during flow"
             />
             <View style={[styles.divider, { backgroundColor: colors.icon + '20' }]} />
             <SettingsToggle
               label="Location"
               value={preferences.locationEnabled}
               onValueChange={(value) => handlePreferenceChange('locationEnabled', value)}
-              description="Usar ubicación para recomendaciones"
+              description="Use location for nearby places"
             />
             <View style={[styles.divider, { backgroundColor: colors.icon + '20' }]} />
             <SettingsToggle
               label="Notifications"
               value={preferences.notificationsEnabled}
               onValueChange={(value) => handlePreferenceChange('notificationsEnabled', value)}
-              description="Notificaciones sobre nuevos spots y paths"
+              description="Notifications about new places and flows"
             />
           </GlassView>
         </View>
 
         {/* LIKED SPOTS Section */}
         <View style={styles.section}>
-          <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.md, textTransform: 'uppercase' }]}>
-            MY CONTENT
-          </Text>
+            <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.md, textTransform: 'uppercase' }]}>
+              My content
+            </Text>
           <GlassView style={styles.card} intensity="medium" opacity="medium">
             <TouchableOpacity
               style={styles.actionItem}
               onPress={() => router.push('/liked-spots')}
               activeOpacity={0.7}>
               <View style={styles.actionContent}>
-                <Text style={[textStyles.bodyMedium, { color: colors.text }]}>Liked Spots</Text>
-                <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
-                  Spots you liked while navigating
-                </Text>
+                    <Text style={[textStyles.bodyMedium, { color: colors.text }]}>Liked places</Text>
+                    <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                      Places you liked while moving
+                    </Text>
               </View>
               <Icon name="like" size={20} color={colors.icon} />
             </TouchableOpacity>
           </GlassView>
         </View>
+
+        {/* ACCOUNT Section (solo si está autenticado) */}
+        {isAuthenticated && (
+          <View style={styles.section}>
+            <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.md, textTransform: 'uppercase' }]}>
+              ACCOUNT
+            </Text>
+            <GlassView style={styles.card} intensity="medium" opacity="medium">
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={handleLogout}
+                activeOpacity={0.7}>
+                <View style={styles.actionContent}>
+                    <Text style={[textStyles.bodyMedium, { color: colors.text }]}>Sign out</Text>
+                  <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs / 2 }]}>
+                    Salir de tu cuenta
+                  </Text>
+                </View>
+                <Icon name="close" size={20} color={colors.icon} />
+              </TouchableOpacity>
+            </GlassView>
+          </View>
+        )}
 
         {/* DATA & PERMISSIONS Section */}
         <View style={styles.section}>

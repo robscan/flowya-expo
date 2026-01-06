@@ -27,6 +27,7 @@ import { useSpot } from '@/contexts/SpotContext';
 import { useOverlay } from '@/contexts/OverlayContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { calculateDistanceToSpot } from '@/utils/distance';
+import { hasValidImage, getValidImage } from '@/utils/imageHelpers';
 
 interface FlowMiniPlayerProps {
   onExpand?: () => void;
@@ -107,7 +108,8 @@ export function FlowMiniPlayer({ onExpand }: FlowMiniPlayerProps) {
   const distance = calculateDistanceToSpot(userLocation, currentSpot.location);
   const distanceText = formatDistance(distance || undefined, useMiles);
 
-  const hasImage = currentSpot.photos && currentSpot.photos.length > 0;
+  const hasImage = hasValidImage(currentSpot.photos);
+  const imageUrl = getValidImage(currentSpot.photos);
 
   const handleDistancePress = (e: any) => {
     e.stopPropagation();
@@ -160,15 +162,15 @@ export function FlowMiniPlayer({ onExpand }: FlowMiniPlayerProps) {
       >
         <View style={staticStyles.content}>
           {/* Imagen del spot */}
-          {hasImage ? (
+          {hasImage && imageUrl ? (
             <Image 
-              source={{ uri: currentSpot.photos[0] }} 
+              source={{ uri: imageUrl }} 
               style={staticStyles.spotImage}
               resizeMode="cover"
             />
           ) : (
             <View style={[staticStyles.spotImagePlaceholder, { backgroundColor: colors.icon + '20' }]}>
-              <Icon name="map" size={16} color={colors.icon} />
+              <Icon name="upload" size={16} color={colors.icon} />
             </View>
           )}
 

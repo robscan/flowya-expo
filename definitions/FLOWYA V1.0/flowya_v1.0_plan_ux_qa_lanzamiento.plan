@@ -16,6 +16,11 @@ Este plan continúa desde donde termina el trabajo previo (Scopes 1-11 completad
 
 **Fuente de verdad:** Product Definition FLOWYA V1.0 (`definitions/FLOWYA V1.0/FLOWYA Product Definition V1.0.md`)
 
+**Documentos relacionados:**
+- `definitions/FLOWYA V1.0/BITACORA_CAMBIOS.md` - Bitácora de cambios del proyecto
+- `definitions/FLOWYA V1.0/BUGS_PENDIENTES.md` - Lista de bugs pendientes de corrección
+- `definitions/FLOWYA V1.0/MUESTRA_DEGRADADO_NOCHE_NUBES.md` - Documentación de gradientes
+
 **Estado previo:** Scopes 1-11 del plan anterior completados
 - ✅ Fundación y Setup
 - ✅ Modelos de Datos
@@ -83,15 +88,16 @@ Este plan continúa desde donde termina el trabajo previo (Scopes 1-11 completad
 
 ### TODOs del Scope 0
 
-- [ ] Actualizar `package.json` (name)
-- [ ] Actualizar `app.json` (name, slug, scheme)
-- [ ] Buscar y reemplazar en código fuente (archivos .ts, .tsx, .js, .jsx)
-- [ ] Actualizar `README.md`
-- [ ] Actualizar documentación en `docs/`
-- [ ] Actualizar strings en componentes UI
-- [ ] Verificación final con grep
-- [ ] Probar builds (iOS, Android, Web)
-- [ ] Crear documento de migración
+- [x] Actualizar `package.json` (name) - ✅ Ya estaba actualizado a "flowya-expo"
+- [x] Actualizar `app.json` (name, slug, scheme) - ✅ Ya estaba actualizado a "flowya"
+- [x] Actualizar storage keys de `@mini_tours_` a `@flowya_` en todos los contextos - ✅ Completado
+- [x] Buscar y reemplazar en código fuente (archivos .ts, .tsx, .js, .jsx) - ✅ Verificado, no hay referencias a "Mini Tours" en código fuente
+- [x] Actualizar `README.md` - ✅ Actualizado con información de API keys
+- [x] Actualizar documentación en `docs/` - ✅ Documento de migración actualizado
+- [x] Actualizar strings en componentes UI - ✅ Verificado, no hay referencias a "Mini Tours" en código fuente
+- [x] Verificación final con grep - ✅ Completado, no se encontraron referencias problemáticas
+- [ ] Probar builds (iOS, Android, Web) - ⚠️ Pendiente (requiere ejecutar builds)
+- [x] Crear documento de migración - ✅ Ya existía, actualizado con cambios recientes
 
 ### Entregables
 
@@ -99,6 +105,360 @@ Este plan continúa desde donde termina el trabajo previo (Scopes 1-11 completad
 - Builds funcionando correctamente
 - Documentación de migración creada
 - Verificación completa sin referencias antiguas
+
+---
+
+## Scope 3: Completar/Implementar Edición de Spots
+
+**Objetivo:** Implementar funcionalidad completa de edición inline de spots en SpotDetailScreen, permitiendo editar todos los campos disponibles.
+
+### Estado Actual
+- ✅ Edición inline implementada en `app/spot-detail.tsx`
+- ✅ CreateSpotModal convertido a pantalla completa (`app/create-spot.tsx`)
+- ✅ Campos editables: nombre, descripción, tipo, foto, contexto cultural, ubicación, cómo visitar, horarios, costos, restricciones, accesibilidad
+- ✅ Selector de iconos para campos que lo requieren (How to visit, Restrictions, Accessibility)
+- ✅ Edición de ubicación mediante selección en mapa (onLongPress)
+- ✅ Selector de horas individual por día de la semana
+- ✅ Slider horizontal para chips de tipo de spot (FlatList)
+
+### Tareas Completadas
+
+1. **Refactorización de CreateSpotModal**
+   - ✅ Convertido `CreateSpotModal` a pantalla completa `app/create-spot.tsx`
+   - ✅ Eliminados props de edición (`initialSpot`, `onUpdate`)
+   - ✅ Ahora solo maneja creación de nuevos spots
+   - ✅ Navegación desde `app/(tabs)/map.tsx` y `app/(tabs)/search.tsx` usando `router.push`
+
+2. **Edición Inline en SpotDetailScreen**
+   - ✅ Implementado estado `isEditMode`
+   - ✅ Implementados estados locales para todos los campos editables
+   - ✅ Conditional rendering: TextInput en modo edición, Text en modo visualización
+   - ✅ Botón "Suggest an edit" en menú "..." activa modo edición
+   - ✅ Botón "Cancel" (close icon) en header durante edición
+   - ✅ Barra de acciones fija al fondo con "Save" y "Cancel"
+
+3. **Campos Editables Implementados**
+   - ✅ Nombre (`editName`)
+   - ✅ Descripción (`editDescription`)
+   - ✅ Tipo (`editType`) - Slider horizontal con FlatList
+   - ✅ Foto (`editPhoto`) - ImagePicker con permisos
+   - ✅ Contexto cultural (`editCulturalContext`)
+   - ✅ Ubicación (`editLocation`) - Lat/lng editables + selección en mapa
+   - ✅ How to visit (`editHowToVisit1`, `editHowToVisit2`) con iconos seleccionables
+   - ✅ Horarios (`editHours`) - Campos individuales por día de la semana
+   - ✅ Costos (`editCost`) - Amount, currency, description
+   - ✅ Restricciones (`editRestrictions`) - Texto editable + selector de icono
+   - ✅ Accesibilidad (`editAccessibility`) - Texto editable + selector de icono
+
+4. **Selector de Iconos**
+   - ✅ Modal `IconSelectorModal` para seleccionar iconos
+   - ✅ Lista de `IconName` disponibles
+   - ✅ Integrado para: How to visit (2 campos), Restrictions, Accessibility
+
+5. **Edición de Ubicación en Mapa**
+   - ✅ `FlowyaMapView` con `onLongPress` para selección de ubicación
+   - ✅ TextInput para lat/lng editable manualmente
+   - ✅ Mapa se actualiza dinámicamente con nueva ubicación
+
+6. **Selector de Horarios**
+   - ✅ Campos individuales de TextInput para cada día de la semana
+   - ✅ Reemplaza textarea multilinea anterior
+
+### TODOs del Scope 3
+
+- [x] Convertir CreateSpotModal a pantalla completa
+- [x] Implementar edición inline en SpotDetailScreen
+- [x] Agregar campos Cultural context, Location, How to visit, Plan info a edición
+- [x] Implementar selector de iconos para campos que lo requieren
+- [x] Implementar edición de location mediante mapa
+- [x] Implementar selector de horas individual por día
+- [x] Agregar campos de texto para Restrictions y Accessibility
+- [x] Convertir chips de tipo a slider horizontal
+- [x] Integrar todas las funcionalidades de edición
+
+### Entregables
+
+- ✅ CreateSpotScreen funcional (pantalla completa)
+- ✅ SpotDetailScreen con edición inline completa
+- ✅ Todos los campos editables implementados
+- ✅ Selector de iconos funcional
+- ✅ Edición de ubicación mediante mapa
+- ✅ Selector de horarios por día
+
+---
+
+## Scope 4: Implementar Administración de Spots
+
+**Objetivo:** Implementar funcionalidades de administración de spots (eliminar, reportar) desde SpotDetailScreen.
+
+### Estado Actual
+- ✅ Delete spot implementado (`deleteSpot` en SpotContext)
+- ✅ Report spot implementado (placeholder con Alert)
+- ✅ "This place no longer exists" elimina el spot
+- ✅ Opciones en menú "..." de SpotDetailScreen
+
+### Tareas Completadas
+
+1. **Menú de Opciones**
+   - ✅ Menú "..." en header de SpotDetailScreen
+   - ✅ Opciones: "Suggest an edit", "Report", "This place no longer exists"
+   - ✅ "Duplicate spot" removido (no necesario)
+
+2. **Eliminar Spot**
+   - ✅ "This place no longer exists" ejecuta `deleteSpot(spot.id)`
+   - ✅ Spot se elimina del contexto y persiste el cambio
+   - ✅ Navegación de regreso después de eliminar
+
+3. **Reportar Spot**
+   - ✅ "Report" muestra Alert.alert con mensaje placeholder
+   - ✅ Preparado para implementación futura
+
+### TODOs del Scope 4
+
+- [x] Verificar funcionalidad delete spot
+- [x] Implementar "Report" en menú "..."
+- [x] Remover "Duplicate spot"
+- [x] Verificar que administración funcione correctamente
+
+### Entregables
+
+- ✅ Menú de opciones funcional en SpotDetailScreen
+- ✅ Delete spot funcionando
+- ✅ Report spot (placeholder implementado)
+
+---
+
+## Scope 5: Completar Spot Detail Screen
+
+**Objetivo:** Completar todas las funcionalidades y secciones de SpotDetailScreen según Product Definition FLOWYA V1.0.
+
+### Estado Actual
+- ✅ Pantalla completa implementada (`app/spot-detail.tsx`)
+- ✅ Header con back, like, share, menú "..." 
+- ✅ Imagen hero (40% de altura de pantalla)
+- ✅ Metadata: tipo, distancia, rating
+- ✅ Botón "Start from here"
+- ✅ Secciones: Why it matters, Cultural context, Location (mapa), How to visit, Plan info
+- ✅ Share functionality implementada
+- ✅ Like/Save functionality implementada
+- ✅ Edición inline (Scope 3)
+
+### Tareas Pendientes
+
+1. **Ajustes de UI**
+   - [ ] Ajustar iconos del header a envolvente circular según convenciones (dark mode: fondo negro/icono blanco, estado activo: color tint)
+
+### TODOs del Scope 5
+
+- [x] Implementar pantalla completa
+- [x] Implementar header con acciones
+- [x] Implementar todas las secciones
+- [x] Integrar mapa (FlowyaMapView)
+- [x] Implementar share
+- [x] Implementar like/save
+- [ ] Ajustar iconos del header (pendiente)
+
+### Entregables
+
+- ✅ SpotDetailScreen funcional y completo
+- ⚠️ Ajustes de iconos pendientes
+
+---
+
+## Scope 6: Completar Flow Detail Screen
+
+**Objetivo:** Completar FlowDetailScreen (pantalla de detalles de Flow antes de iniciar).
+
+### Estado Actual
+- ✅ Pantalla completa implementada (`app/flow-detail.tsx`)
+- ✅ Header con back, like, share, save
+- ✅ Imagen de portada con rotación automática (cada 5 segundos)
+- ✅ Tags de movimiento
+- ✅ Descripción
+- ✅ Métricas: duración estimada, distancia, número de spots
+- ✅ Botón "Start Flow"
+- ✅ Lista de spots usando FlowSpotCard
+- ✅ Share functionality implementada
+
+### Tareas Completadas
+
+1. **Estructura Completa**
+   - ✅ Header con todas las acciones
+   - ✅ Imagen de portada con fotos rotando de spots del flow
+   - ✅ Tags y descripción
+   - ✅ Sección de métricas
+   - ✅ Lista de spots
+
+2. **Funcionalidades**
+   - ✅ Share flow
+   - ✅ Like/Save flow
+   - ✅ Iniciar flow (Start Flow button)
+
+### TODOs del Scope 6
+
+- [x] Crear pantalla completa FlowDetailScreen
+- [x] Implementar header con acciones
+- [x] Implementar imagen de portada con rotación
+- [x] Implementar todas las secciones
+- [x] Implementar share
+- [x] Integrar con FlowContext para iniciar flow
+- [x] Navegación desde FlowCard en Home
+
+### Entregables
+
+- ✅ FlowDetailScreen funcional y completo
+
+---
+
+## Scope 11.5: Revisión como Consultor de Producto
+
+**Objetivo:** Realizar una revisión exhaustiva de toda la plataforma FLOWYA desde la perspectiva de consultor de producto, identificando áreas de oportunidad, inconsistencias, bugs, y mejoras potenciales antes de continuar con el diseño UX/UI final.
+
+### Metodología
+
+1. **Revisión de Arquitectura y Flujos**
+   - Analizar flujos de usuario principales
+   - Verificar consistencia en navegación
+   - Identificar puntos de fricción
+   - Evaluar completitud de funcionalidades
+
+2. **Revisión de Consistencia con Product Definition**
+   - Comparar implementación actual vs Product Definition FLOWYA V1.0
+   - Identificar desviaciones del principio rector
+   - Verificar uso correcto del lenguaje del producto
+   - Evaluar cumplimiento de principios de diseño
+
+3. **Revisión Técnica y de Calidad**
+   - Identificar bugs funcionales
+   - Detectar problemas de rendimiento potenciales
+   - Verificar manejo de errores
+   - Evaluar estados edge cases
+
+4. **Revisión de Experiencia de Usuario**
+   - Identificar áreas de confusión
+   - Detectar funcionalidades faltantes
+   - Evaluar claridad de interacciones
+   - Verificar feedback visual adecuado
+
+5. **Documentación de Hallazgos**
+   - Registrar todos los bugs en `definitions/FLOWYA V1.0/BUGS_PENDIENTES.md`
+   - Priorizar hallazgos (crítico, alto, medio, bajo)
+   - Categorizar áreas de oportunidad
+   - Proporcionar recomendaciones específicas
+
+### Tareas
+
+1. **Revisión de Pantallas Principales**
+   - Home (Explore + Map tabs)
+   - Gems
+   - Saved
+   - Search
+   - Profile
+   - Spot Detail
+   - Flow Detail
+   - Flow Screen
+   - Create Spot
+   - Login/Signup
+
+2. **Revisión de Componentes Core**
+   - Cards (SpotCard, FlowCard, FlowSpotCard, etc.)
+   - Mapas (SimpleMapView, FlowyaMapView, MapViewWeb)
+   - Navegación (Tab Bar, Headers)
+   - Modales y Overlays
+
+3. **Revisión de Contextos y Estado Global**
+   - SpotContext
+   - PathContext (FlowCollectionContext)
+   - FlowContext
+   - SavedContext
+   - NarrationContext
+   - AuthContext
+
+4. **Revisión de Flujos de Usuario**
+   - Flujo de exploración
+   - Flujo de creación de Spot
+   - Flujo de edición de Spot
+   - Flujo de creación/inicio de Flow
+   - Flujo de autenticación
+   - Flujo de búsqueda
+
+5. **Revisión de Integraciones**
+   - Google Maps (habilitado recientemente)
+   - Supabase (configurado recientemente)
+   - Weather API
+   - Places API
+
+### TODOs del Scope 11.5
+
+- [x] Revisar todas las pantallas principales
+- [x] Revisar componentes core
+- [x] Revisar contextos y estado global
+- [x] Revisar flujos de usuario completos
+- [x] Revisar integraciones externas
+- [x] Identificar y documentar bugs
+- [x] Identificar áreas de oportunidad
+- [x] Priorizar hallazgos
+- [x] Generar reporte de revisión
+
+### Tareas Urgentes Identificadas (ASAP)
+
+1. **✅ Configurar Google Maps Web API Key** - COMPLETADO
+   - **Problema**: `EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY` no estaba configurada en `.env`
+   - **Error**: "Google Maps API key not configured. Please set EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY in .env"
+   - **Impacto**: Mapas no funcionaban correctamente en web
+   - **Solución aplicada**: ✅ Agregada `EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY` al archivo `.env` con la misma clave de Android/iOS
+   - **Ubicación**: `components/MapViewWeb.tsx` línea 154
+   - **Prioridad**: 🔴 Crítica - Bloquea funcionalidad de mapas en web
+   - **Estado**: ✅ Resuelto - **⚠️ Requiere reiniciar servidor de Expo para cargar la nueva variable**
+   - **Verificación pendiente**: Confirmar que la API key tenga habilitada "Maps JavaScript API" en Google Cloud Console
+
+2. **✅ Arreglar Sección MAP - Pantalla Negra y Mejoras** - COMPLETADO
+   - **Problema 1**: La mitad de la pantalla se ve negra en la sección MAP
+   - **Problema 2**: Letrero "For development purposes only" no ocupa todo el espacio disponible
+   - **Problema 3**: Falta botón "+" para crear spot (como en Search)
+   - **Solución aplicada**:
+     - ✅ Agregado botón "+" en header junto al icono de perfil (`app/(tabs)/map.tsx`)
+     - ✅ Ajustado `mapContainer` con `width: '100%'`, `height: '100%'` y `backgroundColor` para evitar pantalla negra
+     - ✅ Agregados estilos CSS personalizados en `MapViewWeb.tsx` para que el letrero "For development purposes only" ocupe todo el espacio disponible
+     - ✅ Mejorado estilo del contenedor del mapa con `backgroundColor: 'transparent'`
+   - **Ubicaciones afectadas**:
+     - `app/(tabs)/map.tsx` - Header y contenedor del mapa
+     - `components/MapViewWeb.tsx` - Estilos del contenedor y CSS personalizado
+   - **Prioridad**: 🔴 Crítica - Bloquea funcionalidad de mapas en web
+   - **Estado**: ✅ Resuelto
+   - **Problema**: `EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY` no estaba configurada en `.env`
+   - **Error**: "Google Maps API key not configured. Please set EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY in .env"
+   - **Impacto**: Mapas no funcionaban correctamente en web
+   - **Solución aplicada**: ✅ Agregada `EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY` al archivo `.env` con la misma clave de Android/iOS
+   - **Ubicación**: `components/MapViewWeb.tsx` línea 154
+   - **Prioridad**: 🔴 Crítica - Bloquea funcionalidad de mapas en web
+   - **Estado**: ✅ Resuelto - **⚠️ Requiere reiniciar servidor de Expo para cargar la nueva variable**
+   - **Verificación pendiente**: Confirmar que la API key tenga habilitada "Maps JavaScript API" en Google Cloud Console
+
+3. **⚠️ Botón de Mostrar Mi Ubicación No Funciona en Mobile** - PENDIENTE
+   - **Problema**: El botón flotante para centrar el mapa en la ubicación del usuario no funciona en dispositivos móviles (iOS/Android)
+   - **Impacto**: Funcionalidad crítica de mapas no funciona en mobile
+   - **Ubicaciones afectadas**:
+     - `app/(tabs)/map.tsx` - Botón flotante de ubicación
+     - `components/MapView.tsx` - Función `centerOnUserLocation` expuesta
+     - `components/SimpleMapView.tsx` - Función `centerOnUserLocation`
+     - `components/MapViewWeb.tsx` - Función `centerOnUserLocation`
+   - **Solución requerida**:
+     - Exponer correctamente la función `centerOnUserLocation` desde `MapView.tsx` para react-native-maps
+     - Asegurar que el ref del MapView de react-native-maps esté disponible y se use `animateToRegion` correctamente
+     - Verificar que funcione tanto en iOS como Android
+     - Eliminar dependencia de estados hover (solo usar tap/onPress)
+     - Probar en web, iOS y Android para asegurar compatibilidad multiplataforma
+   - **Prioridad**: 🔴 Crítica - Bloquea funcionalidad de mapas en mobile
+   - **Estado**: ⚠️ Pendiente
+   - **Notas**: El botón debe funcionar con tap (onPress), no con hover. Debe funcionar en web, iOS y Android.
+
+### Entregables
+
+- Lista completa de bugs documentados en `BUGS_PENDIENTES.md`
+- Reporte de áreas de oportunidad
+- Recomendaciones priorizadas
+- Documentación de inconsistencias encontradas
 
 ---
 
@@ -173,22 +533,24 @@ Revisar componentes en este orden específico:
    - FlowFullPlayer
 
 5. **Modales/Drawers**
-   - Spot Detail (pantalla completa)
-   - CreateSpotModal
+   - Spot Detail (pantalla completa) - ✅ Completo (Scope 5)
+   - CreateSpotScreen (pantalla completa) - ✅ Completo (Scope 3)
 
-6. **Path Detail**
-   - Crear `app/path-detail.tsx` como pantalla completa (pendiente de V5)
-   - Implementar header con back, like, share
-   - Implementar tags y descripción
-   - Implementar sección de métricas (duración, distancia, dificultad, momento)
-   - Implementar botón "Start Flow" (nota: el término correcto es "Flow", no "Playlist")
-   - Implementar sección con lista de spots
-   - Implementar funcionalidad de reordenamiento
-   - Agregar ruta en `app/_layout.tsx`
+6. **Flow Detail**
+   - ✅ Crear `app/flow-detail.tsx` como pantalla completa (completado en Scope 6)
+   - ✅ Implementar header con back, like, share
+   - ✅ Implementar tags y descripción
+   - ✅ Implementar sección de métricas (duración, distancia, número de spots)
+   - ✅ Implementar botón "Start Flow"
+   - ✅ Implementar sección con lista de spots
+   - ✅ Implementar imagen de portada con rotación automática
+   - ✅ Agregar ruta en `app/_layout.tsx`
+   - [ ] Implementar funcionalidad de reordenamiento (pendiente)
 
 7. **Map**
    - SimpleMapView
    - MapSpotMarker
+   - ⚠️ **Pendiente**: Corregir botón de mostrar mi ubicación en mobile (bug #3 en BUGS_PENDIENTES.md)
 
 8. **Navegación**
    - Tab Bar
@@ -247,47 +609,47 @@ Después de revisar todos los componentes:
 8. **Ajustes Pendientes de Spot Detail**
 
 - [ ] Ajustar iconos del header a envolvente circular según convenciones (dark mode: fondo negro/icono blanco, estado activo: color tint)
-- [ ] Implementar menú de opciones (tres puntos) con: "Suggest an edit", "Reportar", "Este lugar ya no existe"
+- [x] Implementar menú de opciones (tres puntos) con: "Suggest an edit", "Reportar", "Este lugar ya no existe" (completado en Scope 4)
 
 9. **Mejoras de FlowScreen**
 
-- [ ] Agregar botones de minimizar y cerrar en el header de FlowScreen (junto a "NOW MOVING")
-- [ ] Implementar listado de spots con drag and drop debajo del spot actual en vista "List" (usando PathSpotCard)
-- [ ] Implementar diálogo de guardar Path al cerrar FlowScreen:
-  - Opción "Guardar Path"
-  - Opción "Cerrar sin guardar"
-- [ ] Implementar funcionalidad de minimizar: oculta FlowScreen y muestra FlowMiniPlayer sobre tab bar
-- [ ] Implementar funcionalidad de cerrar: regresa a pantalla de origen (router.back())
-- [ ] Mover botón "Testing Components" más arriba en Home screen
+- [x] Agregar botones de minimizar y cerrar en el header de FlowScreen (junto a "NOW MOVING") - ✅ Ya implementado
+- [ ] Implementar listado de spots con drag and drop debajo del spot actual en vista "List" (usando PathSpotCard) - ⚠️ Pendiente: listado existe pero sin drag and drop
+- [x] Implementar diálogo de guardar Path al cerrar FlowScreen - ✅ Ya implementado con Alert.alert
+- [x] Implementar funcionalidad de minimizar: oculta FlowScreen y muestra FlowMiniPlayer sobre tab bar - ✅ Ya implementado
+- [x] Implementar funcionalidad de cerrar: regresa a pantalla de origen (router.back()) - ✅ Ya implementado
+- [x] Mover botón "Testing Components" más arriba en Home screen - ✅ Ya completado
 
 10. **Ajustes de FlowMiniPlayer**
 
-- [ ] Cambiar a fullwidth: eliminar márgenes laterales (left: 0, right: 0)
-- [ ] Eliminar bordes redondeados: borderRadius: 0 para fusionarse con viewport
-- [ ] Reemplazar botón de navegación por botón play/pause central
-- [ ] Implementar controles: play/pause (pauseFlow/resumeFlow), atrás (previousSpot), adelante (nextSpot)
-- [ ] Asegurar que controles no expandan el player (stopPropagation)
+- [x] Cambiar a fullwidth: eliminar márgenes laterales (left: 0, right: 0) - ✅ Ya implementado
+- [x] Eliminar bordes redondeados: borderRadius: 0 para fusionarse con viewport - ✅ Ya implementado
+- [x] Reemplazar botón de navegación por botón play/pause central - ✅ Ya implementado
+- [x] Implementar controles: play/pause (pauseFlow/resumeFlow), atrás (previousSpot), adelante (nextSpot) - ✅ Ya implementado
+- [x] Asegurar que controles no expandan el player (stopPropagation) - ✅ Ya implementado con e.stopPropagation()
 
 ### TODOs del Scope 12
 
-- [ ] Revisar componentes base (GlassView, Icon)
-- [ ] Revisar Cards (SpotCard, GemsSpotCard, GemsPathCard, SearchResultCard, PathCard, PathSpotCard)
-- [ ] Revisar pantallas principales (Home, Gems, Saved, Search, Profile)
-- [ ] Actualizar título de Home: "FLOWYA - Home" en `app/(tabs)/home.tsx`
-- [ ] Revisar Flow (FlowScreen, FlowMiniPlayer, FlowFullPlayer)
-- [ ] Mejoras de FlowScreen (controles header, listado drag and drop, diálogo guardar, minimizar/cerrar)
-- [ ] Mover botón "Testing Components" más arriba en Home
-- [ ] Crear Path Detail (pantalla completa)
-- [ ] Revisar Modales/Drawers (Spot Detail, CreateSpotModal)
-- [ ] Revisar Map (SimpleMapView, MapSpotMarker)
-- [ ] Revisar Navegación (Tab Bar)
-- [ ] Verificación global del sistema de diseño
-- [ ] Completar estados visuales en todas las pantallas
-- [ ] Revisar y ajustar animaciones y transiciones
-- [ ] Verificar accesibilidad visual
-- [ ] Revisar y ajustar microcopys según FLOWYA V1.0
-- [ ] Verificar dark/light mode completo
-- [ ] Ajustes finales de Spot Detail
+- [x] Revisar componentes base (GlassView, Icon) - ✅ Completado: GlassView tiene soporte web (transparencia sin blur), Icon usa MaterialIcons compatible con web
+- [x] Revisar Cards (SpotCard, FlowCard) - ✅ Completado: No usan estados hover, usan Pressable/TouchableOpacity compatibles con web
+- [x] Revisar pantallas principales (Home, Saved, Search, Profile) - ✅ Completado: Todas usan componentes compatibles con web, Saved tiene estado vacío, Search tiene lógica completa, Profile funcional con versión sin login y logout
+- [x] Actualizar título de Home: "FLOWYA - Home" en `app/(tabs)/home.tsx` - ✅ Ya estaba actualizado
+- [x] Agregar estados vacíos básicos en pantallas principales - ✅ Agregado en Home
+- [x] Revisar Flow (FlowScreen, FlowMiniPlayer) - ✅ Completado: FlowScreen tiene controles header, diálogo guardar, minimizar/cerrar. FlowMiniPlayer tiene fullwidth, sin bordes, controles play/pause/atrás/adelante
+- [x] Mejoras de FlowScreen (controles header, diálogo guardar, minimizar/cerrar) - ✅ Completado
+- [ ] Mejoras de FlowScreen: Implementar drag and drop en listado de spots - ⚠️ Pendiente (funcionalidad avanzada, puede esperar)
+- [x] Mover botón "Testing Components" más arriba en Home (completado)
+- [x] Crear Flow Detail (pantalla completa) - completado en Scope 6
+- [ ] Revisar Modales/Drawers (Spot Detail - completado Scope 5, CreateSpotScreen - completado Scope 3)
+- [x] Revisar Map (SimpleMapView, MapSpotMarker) - ✅ Completado: MapViewWeb con pines visibles y botón de ubicación funcionando
+- [x] Revisar Navegación (Tab Bar) - ✅ Completado: Tab Bar tiene soporte web con fondo gris sutil sin blur, compatible con navegadores móviles
+- [x] Verificación global del sistema de diseño - ✅ Completado: Espaciado 8px verificado y corregido, tipografía Inter verificada, iconos verificados
+- [x] Completar estados visuales en todas las pantallas - ✅ Completado: Estados vacíos y de carga implementados en Home, Saved, Search
+- [x] Revisar y ajustar animaciones y transiciones - ✅ Completado: Animaciones verificadas (300ms, sin rebotes, transiciones suaves)
+- [x] Verificar accesibilidad visual - ✅ Completado: Áreas táctiles ≥ 48px verificadas, contraste verificado en sistema de colores
+- [x] Revisar y ajustar microcopys según FLOWYA V1.0 - ✅ Completado: Microcopys revisados y alineados con principios FLOWYA
+- [x] Verificar dark/light mode completo - ✅ Completado: Sistema de colores verificado, soporte completo en todos los componentes
+- [ ] Ajustes finales de Spot Detail - ⚠️ Pendiente: Ajustes menores de iconos del header (no crítico)
 
 ### Entregables
 
@@ -298,6 +660,197 @@ Después de revisar todos los componentes:
 - Animaciones suaves y coherentes
 - Microcopys alineados con FLOWYA V1.0
 - Dark/light mode funcional y coherente
+
+---
+
+## Scope 12.1: Sistema de Audio Narrativo + AI Content Generator
+
+**Objetivo:** Implementar sistema completo de audio narrativo con TTS del dispositivo y agente AI (GPT-4 Turbo) que genera/curate contenido visual y narrativo para spots, mejorando la experiencia sin duplicar información existente.
+
+### Tareas
+
+1. **Actualización de Product Definition**
+
+- Expandir sección "ENRIQUECIMIENTO ASISTIDO" en `definitions/FLOWYA V1.0/FLOWYA Product Definition V1.0.md`:
+  - Generación de contenido visual (whyItMatters, culturalContext, howToVisit)
+  - Generación de narrativas emocionales para audio (anticipation, presence, transition)
+  - Uso de AI para curar y redactar contenido
+  - Sistema que no duplica contenido existente (usa información existente si está disponible)
+  - Contenido generado se cachea en el spot (no se regenera a menos que se solicite)
+
+2. **Extensión del Modelo de Datos**
+
+#### 2.1 Extender tipo Spot
+
+**Archivo:** `data/spots.ts`
+
+- Agregar campos al interface `Spot`:
+  - `whyItMatters?: string` - Reemplaza uso de description en Spot Detail
+  - `culturalContext?: string` - Contexto cultural (ya se usa pero no persiste)
+  - `howToVisit?: { bestTime?: { icon: string; text: string }; photography?: { icon: string; text: string } }` - Tips de visita
+  - `narration?: { anticipation?: string; presence?: string; transition?: string }` - Narrativas para audio (NO visibles en UI)
+  - `aiGenerated?: { generatedAt?: Date; model?: string; source?: 'ai' | 'manual' | 'hybrid' }` - Metadatos de generación
+- Mantener backwards compatibility (campos opcionales)
+- Crear función de migración que convierta `description` existente a `whyItMatters`
+
+3. **Integración con OpenAI API (GPT-4 Turbo)**
+
+#### 3.1 Configuración de API
+
+**Archivo:** `utils/aiConfig.ts` (nuevo)
+
+- Configuración de OpenAI API
+- Variable de entorno: `OPENAI_API_KEY`
+- Modelo: `gpt-4-turbo-preview` (o `gpt-4o` si disponible)
+- Configuración de rate limiting y costos
+- Función para validar API key
+
+#### 3.2 Servicio AI Content Generator
+
+**Archivo:** `utils/aiContentGenerator.ts` (nuevo)
+
+- Clase `AIContentGenerator` con método `generateContent(spot: Spot, options?: GenerateContentOptions)`
+- Lógica de detección: verificar si spot ya tiene contenido completo
+- Si tiene → retornar existente (NO generar - no duplicar)
+- Si falta → generar solo lo faltante
+- Combinar: contenido existente + nuevo generado
+- Cachear resultado en el spot
+- Prompts para GPT-4 Turbo: estilo emocional, contemplativo, frases cortas, narrativas específicas por tipo
+- Manejo de errores y fallbacks (timeout, rate limit, contenido genérico)
+
+4. **Sistema de Narrativas Híbrido**
+
+#### 4.1 Generador de Narrativas
+
+**Archivo:** `utils/narrationGenerator.ts` (nuevo)
+
+- Sistema híbrido de prioridades:
+  1. Prioridad: `narration` específico del spot
+  2. Fallback: `culturalContext`
+  3. Fallback: `description`/`whyItMatters`
+  4. Fallback: narrativa genérica por tipo de spot
+- Funciones: `generateNarrationText`, `adaptContextToNarrationType`, `adaptDescriptionToNarrationType`, `getGenericNarration`
+
+#### 4.2 Integración con NarrationContext
+
+**Archivo:** `components/NarrationController.tsx`
+
+- Actualizar `useNarrationTriggers` para usar `narrationGenerator`
+- Reemplazar llamadas a `getRandomNarrationBySpotAndType` con `generateNarrationText`
+- Mantener sistema de colas y reglas duras existentes
+- TTS: Mantener `expo-speech` (dispositivo) - ya funciona
+
+5. **UI/UX - Generación de Contenido**
+
+#### 5.1 Flujo de creación de Spot
+
+**Archivo:** `components/CreateSpotModal.tsx`
+
+- Agregar botón opcional "Generate content with AI" después de crear spot básico
+- Mostrar loading state durante generación
+- Una vez generado → prellenar campos editables
+- Usuario puede editar/ajustar antes de guardar
+
+#### 5.2 Flujo de edición de Spot
+
+**Archivo:** `app/spot-detail.tsx`
+
+- Si spot no tiene contenido → mostrar botón "Generate with AI" en modo edición
+- Si spot tiene contenido → permitir "Regenerate with AI" (opcional, discreto)
+- Regenerar solo campos faltantes (no duplicar existente)
+- Actualizar UI para usar nuevos campos (`whyItMatters`, `culturalContext`, `howToVisit`)
+- Migrar uso de `description` hardcoded a `whyItMatters`
+- Secciones a actualizar:
+  - "Why it matters" → usar `spot.whyItMatters || spot.description`
+  - "Cultural context" → usar `spot.culturalContext`
+  - "How to visit" → usar `spot.howToVisit`
+
+#### 5.3 Indicadores visuales
+
+- Badge "AI Generated" opcional y discreto (solo para admin/debug)
+- Timestamp de generación en metadatos (no visible para usuario final)
+- Mantener UI limpia - no destacar que es AI generado
+
+6. **Actualización de Contextos y Persistencia**
+
+#### 6.1 Actualizar SpotContext
+
+**Archivo:** `contexts/SpotContext.tsx`
+
+- Actualizar `createSpot` para manejar nuevos campos
+- Actualizar `updateSpot` para manejar nuevos campos
+- Agregar método `generateSpotContent(spotId: string)` que llama a AI generator
+- Persistencia de nuevos campos en AsyncStorage/backend
+
+#### 6.2 Migración de datos
+
+- Crear script de migración para spots existentes
+- Convertir `description` → `whyItMatters` donde aplica
+- Mantener `description` como fallback
+
+7. **Testing y Validación**
+
+- Testing de generación AI (spots nuevos, existentes, campos faltantes, manejo de errores)
+- Testing de sistema de narrativas (prioridades, fallbacks, integración con FlowScreen)
+- Testing de TTS con narrativas generadas
+- Testing de UI (botones, loading states, errores, visualización)
+
+### TODOs del Scope 12.1
+
+- [ ] Actualizar Product Definition (sección ENRIQUECIMIENTO ASISTIDO)
+- [ ] Extender tipo Spot con nuevos campos
+- [ ] Crear utils/aiConfig.ts
+- [ ] Crear utils/aiContentGenerator.ts
+- [ ] Crear utils/narrationGenerator.ts
+- [ ] Actualizar SpotContext para manejar nuevos campos
+- [ ] Actualizar app/spot-detail.tsx para usar nuevos campos
+- [ ] Agregar botón "Generate with AI" en CreateSpotModal
+- [ ] Agregar botón "Generate with AI" en Spot Detail (edición)
+- [ ] Actualizar NarrationController para usar narrationGenerator
+- [ ] Migrar datos existentes (description → whyItMatters)
+- [ ] Testing: Generación de contenido AI
+- [ ] Testing: Sistema de narrativas híbrido
+- [ ] Testing: TTS con narrativas generadas
+- [ ] Testing: UI de generación de contenido
+
+### Entregables
+
+- Tipo Spot extendido con todos los campos
+- Servicio AI Content Generator funcionando
+- Sistema de narrativas híbrido integrado
+- UI para generar contenido con AI
+- Migración de datos existentes completada
+- Product Definition actualizada
+- Documentación completa
+- Sistema probado y validado
+
+### Consideraciones Técnicas
+
+**Seguridad:**
+- API key en variables de entorno (nunca en código)
+- Validación de inputs antes de enviar a AI
+- Rate limiting para prevenir abuse
+- Manejo seguro de errores
+
+**Costos:**
+- Estimado: ~$0.05-0.15 por spot completo
+- Cacheo reduce costos significativamente
+- Generación bajo demanda (no proactiva)
+- Monitoreo de costos recomendado
+
+**Calidad:**
+- Prompts específicos por tipo de spot
+- Validación de longitud y formato de respuestas
+- Fallbacks si AI falla
+- Testing manual de calidad de contenido
+
+**Notas de Implementación:**
+- No duplicar contenido: El sistema debe detectar si un spot ya tiene contenido y NO regenerarlo a menos que se fuerce explícitamente
+- Cacheo persistente: Contenido generado se guarda en el spot y persiste entre sesiones
+- Generación bajo demanda: Solo se genera cuando el usuario lo solicita o cuando falta contenido crítico
+- Fallbacks robustos: Sistema debe funcionar incluso si AI falla, usando contenido existente o genérico
+- TTS del dispositivo: Mantener uso de expo-speech (dispositivo) para TTS - no cambiar a OpenAI TTS por ahora
+- Estilo emocional: Todo contenido generado debe seguir el principio de Product Definition: emocional, contemplativo, frases cortas, no exhaustivo
 
 ---
 
@@ -401,26 +954,28 @@ Después de revisar todos los componentes:
 
 12. **Documentación de Bugs**
 
-- Crear `docs/QA_BUGS.md`
-- Listar todos los bugs encontrados
+- Usar `definitions/FLOWYA V1.0/BUGS_PENDIENTES.md` para documentar bugs encontrados
+- Listar todos los bugs encontrados en este documento
 - Priorizar bugs (críticos, altos, medios, bajos)
 - Documentar pasos para reproducir
 - Documentar plataformas afectadas
+- **Nota**: Todos los documentos de planificación y bugs deben guardarse en `definitions/FLOWYA V1.0/` para mantener organización centralizada
 
 ### TODOs del Scope 13
 
-- [ ] QA funcional de todas las pantallas
-- [ ] QA de integración de contextos
-- [ ] QA de persistencia
-- [ ] QA de plataformas (iOS, Android, Web)
-- [ ] QA de rendimiento
-- [ ] QA de permisos (Fase 1)
-- [ ] QA de offline básico
-- [ ] QA de narration
-- [ ] QA de flujos de usuario completos
-- [ ] QA de edge cases
-- [ ] QA de accesibilidad
-- [ ] Documentación de bugs encontrados
+- [x] Crear checklist de QA (`definitions/FLOWYA V1.0/QA_CHECKLIST.md`) - ✅ Completado
+- [ ] QA funcional de todas las pantallas - ⚠️ Pendiente de ejecución manual
+- [ ] QA de integración de contextos - ⚠️ Pendiente de ejecución manual
+- [ ] QA de persistencia - ⚠️ Pendiente de ejecución manual
+- [ ] QA de plataformas (Web - foco principal) - ⚠️ Pendiente de ejecución manual
+- [ ] QA de rendimiento - ⚠️ Pendiente de ejecución manual
+- [ ] QA de permisos (Fase 1) - ⚠️ Pendiente de ejecución manual
+- [ ] QA de offline básico - ⚠️ Pendiente de ejecución manual
+- [ ] QA de narration - ⚠️ Pendiente de ejecución manual
+- [ ] QA de flujos de usuario completos - ⚠️ Pendiente de ejecución manual
+- [ ] QA de edge cases - ⚠️ Pendiente de ejecución manual
+- [ ] QA de accesibilidad - ⚠️ Pendiente de ejecución manual
+- [ ] Documentación de bugs encontrados - ⚠️ Pendiente (se documentará durante QA)
 
 ### Entregables
 
@@ -440,11 +995,11 @@ Después de revisar todos los componentes:
 
 1. **Corrección de Bugs Críticos**
 
-- Revisar lista de bugs del Scope 13
+- Revisar lista de bugs en `definitions/FLOWYA V1.0/BUGS_PENDIENTES.md`
 - Priorizar bugs críticos (bloquean funcionalidad principal)
 - Corregir bugs críticos
 - Verificar correcciones
-- Actualizar documentación de bugs
+- Actualizar `definitions/FLOWYA V1.0/BUGS_PENDIENTES.md` con estado de correcciones
 
 2. **Build de Pruebas Internas**
 
@@ -497,10 +1052,15 @@ Después de revisar todos los componentes:
 ```mermaid
 graph TD
     A[Plan Anterior - Scopes 1-11 ✅] --> B[Scope 0: Revisión Nombre]
-    B --> C[Scope 12: Diseño UX/UI]
-    C --> D[Scope 13: QA Exhaustivo]
-    D --> E[Scope 14: Corrección Bugs]
-    E --> F[Versión para Pruebas Internas 🚀]
+    B --> C[Scope 3: Edición de Spots]
+    C --> D[Scope 4: Administración de Spots]
+    D --> E[Scope 5: Completar Spot Detail]
+    E --> F[Scope 6: Completar Flow Detail]
+    F --> G[Scope 12: Diseño UX/UI]
+    G --> H[Scope 12.1: Audio Narrativo + AI Content Generator]
+    H --> I[Scope 13: QA Exhaustivo]
+    I --> J[Scope 14: Corrección Bugs]
+    J --> K[Versión para Pruebas Internas 🚀]
 ```
 
 ---
@@ -545,7 +1105,7 @@ graph TD
 
 7. **Versionamiento**: Cada fase importante debe tener su tag de versión para poder volver atrás si es necesario.
 
-8. **Documentación**: Mantener documentación actualizada en cada scope para facilitar trabajo futuro.
+8. **Documentación**: Mantener documentación actualizada en cada scope para facilitar trabajo futuro. **IMPORTANTE**: Todos los documentos de planificación, bugs, bitácoras, estados y documentación relacionada deben guardarse en `definitions/FLOWYA V1.0/` para mantener organización centralizada y evitar que se pierdan u olviden documentos.
 
 ---
 
@@ -564,8 +1124,19 @@ Una vez completadas las pruebas internas y recopilado feedback:
 
 ---
 
-**Estado del Plan**: En desarrollo
-**Última actualización**: [Fecha]
-**Versión del Plan**: 1.0
-**Basado en**: Product Definition FLOWYA V1.0
+**Estado del Plan**: En desarrollo - Foco en Web  
+**Última actualización**: 2025-01-XX  
+**Versión del Plan**: 1.0  
+**Basado en**: Product Definition FLOWYA V1.0  
 **Plan anterior**: `definitions/V5/mini_tours_plan_ux_qa_lanzamiento.plan` (Scopes 1-11 completados)
+
+## 📌 Nota Importante - Foco Actual
+
+**Decisión estratégica**: El foco actual está en **Web** para pruebas en navegador móvil. Los errores de iOS/Android nativo están documentados pero no son prioritarios en este momento.
+
+**Estado de plataformas**:
+- ✅ **Web**: Funcional, listo para pruebas
+- ⚠️ **iOS**: Errores conocidos (no prioritario) - Bug #17 en BUGS_PENDIENTES.md
+- ⚠️ **Android**: Probablemente afectado (no prioritario)
+
+**Próximos pasos**: Continuar con Scope 12 (Diseño UX/UI Final) y preparación para pruebas en navegador móvil web.

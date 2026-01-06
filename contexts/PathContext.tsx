@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Flow, MovementMode, calculateEstimatedDuration } from '@/data/flows';
 import { mockFlows } from '@/data/flows';
 
-const STORAGE_KEY = '@mini_tours_flows';
+const STORAGE_KEY = '@flowya_flows';
 
 interface PathContextType {
   flows: Flow[];
@@ -32,6 +32,7 @@ interface PathContextType {
   updateFlow: (id: string, updates: Partial<Flow>) => void;
   deleteFlow: (id: string) => void;
   suggestFlowFromSpots: (spotIds: string[]) => Flow | null;
+  refreshFlows: () => Promise<void>;
   // Aliases para compatibilidad temporal
   paths: Flow[];
   getPathById: (id: string) => Flow | undefined;
@@ -66,6 +67,7 @@ export function PathProvider({ children }: { children: ReactNode }) {
 
   const loadFlows = async () => {
     try {
+      setIsLoading(true);
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -95,6 +97,11 @@ export function PathProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const refreshFlows = async () => {
+    // Recargar flows desde AsyncStorage
+    await loadFlows();
   };
 
   const saveFlows = async (flowsToSave: Flow[]) => {
@@ -189,6 +196,7 @@ export function PathProvider({ children }: { children: ReactNode }) {
     updateFlow,
     deleteFlow,
     suggestFlowFromSpots,
+    refreshFlows,
     // Aliases para compatibilidad
     paths: flows,
     getPathById,

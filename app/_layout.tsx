@@ -2,13 +2,16 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { Toast } from '@/components/ui/Toast';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { SavedProvider } from '@/contexts/SavedContext';
 import { SpotProvider } from '@/contexts/SpotContext';
 import { PathProvider } from '@/contexts/PathContext';
@@ -28,6 +31,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const isOnline = useNetworkStatus();
 
   // Cargar fuentes Inter
   // CRÍTICO: Inter como ÚNICA tipografía del proyecto
@@ -52,6 +56,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
+      <AuthProvider>
       <SpotProvider>
         <PathProvider>
           <FlowProvider>
@@ -65,12 +70,22 @@ export default function RootLayout() {
                         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
                         <Stack.Screen name="liked-spots" options={{ presentation: 'modal', title: 'Liked Spots', headerShown: false }} />
                         <Stack.Screen name="spot-detail" options={{ presentation: 'card', headerShown: false }} />
+                          <Stack.Screen name="create-spot" options={{ presentation: 'card', headerShown: false }} />
+                          <Stack.Screen name="flow-detail" options={{ presentation: 'card', headerShown: false }} />
                         <Stack.Screen name="flow-full-player" options={{ presentation: 'card', headerShown: false }} />
                       </Stack>
                       <StatusBar style="auto" />
                       <NarrationController />
                       <FlowScreen />
                       <FlowMiniPlayer />
+                      {/* Offline indicator */}
+                      {!isOnline && (
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#FF6B6B', padding: 8, zIndex: 9999 }}>
+                          <Text style={{ color: '#fff', textAlign: 'center', fontSize: 12 }}>
+                            Offline
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </ThemeProvider>
                 </OverlayProvider>
@@ -79,6 +94,7 @@ export default function RootLayout() {
           </FlowProvider>
         </PathProvider>
       </SpotProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }

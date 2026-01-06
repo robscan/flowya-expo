@@ -13,7 +13,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = '@mini_tours_saved';
+const STORAGE_KEY = '@flowya_saved';
 
 export type AffinityAction = 'like' | 'not_my_vibe' | 'saved' | 'visited';
 

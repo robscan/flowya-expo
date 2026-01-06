@@ -8,16 +8,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 /**
  * Limpiar todos los datos guardados en AsyncStorage
  * Esto incluye:
- * - Spots (@mini_tours_spots)
- * - Paths (@mini_tours_paths)
- * - Saved data (@mini_tours_saved)
+ * - Spots (@flowya_spots)
+ * - Flows (@flowya_flows)
+ * - Saved data (@flowya_saved)
+ * - Preferences (@flowya_preferences)
  */
 export async function clearAllStorage(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([
+      '@flowya_spots',
+      '@flowya_flows',
+      '@flowya_saved',
+      '@flowya_preferences',
+      // Mantener compatibilidad con keys antiguas por si acaso
       '@mini_tours_spots',
       '@mini_tours_paths',
+      '@mini_tours_flows',
       '@mini_tours_saved',
+      '@mini_tours_preferences',
     ]);
     console.log('✅ AsyncStorage limpiado correctamente');
   } catch (error) {
@@ -31,7 +39,7 @@ export async function clearAllStorage(): Promise<void> {
  */
 export async function clearSpotsStorage(): Promise<void> {
   try {
-    await AsyncStorage.removeItem('@mini_tours_spots');
+    await AsyncStorage.multiRemove(['@flowya_spots', '@mini_tours_spots']);
     console.log('✅ Spots storage limpiado');
   } catch (error) {
     console.error('❌ Error limpiando spots storage:', error);
@@ -40,14 +48,14 @@ export async function clearSpotsStorage(): Promise<void> {
 }
 
 /**
- * Limpiar solo los datos de paths
+ * Limpiar solo los datos de flows
  */
 export async function clearPathsStorage(): Promise<void> {
   try {
-    await AsyncStorage.removeItem('@mini_tours_paths');
-    console.log('✅ Paths storage limpiado');
+    await AsyncStorage.multiRemove(['@flowya_flows', '@mini_tours_paths', '@mini_tours_flows']);
+    console.log('✅ Flows storage limpiado');
   } catch (error) {
-    console.error('❌ Error limpiando paths storage:', error);
+    console.error('❌ Error limpiando flows storage:', error);
     throw error;
   }
 }
@@ -57,7 +65,7 @@ export async function clearPathsStorage(): Promise<void> {
  */
 export async function clearSavedStorage(): Promise<void> {
   try {
-    await AsyncStorage.removeItem('@mini_tours_saved');
+    await AsyncStorage.multiRemove(['@flowya_saved', '@mini_tours_saved']);
     console.log('✅ Saved data storage limpiado');
   } catch (error) {
     console.error('❌ Error limpiando saved data storage:', error);

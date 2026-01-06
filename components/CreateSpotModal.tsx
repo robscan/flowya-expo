@@ -46,6 +46,9 @@ interface CreateSpotModalProps {
   userLocation: { latitude: number; longitude: number } | null;
   onClose: () => void;
   onCreate: (spot: Omit<Spot, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  // Props para edición
+  initialSpot?: Spot | null; // Si existe, el modal está en modo edición
+  onUpdate?: (id: string, updates: Partial<Spot>) => void; // Para actualizar spot existente
 }
 
 const SPOT_TYPES: SpotType[] = [
@@ -77,9 +80,10 @@ function getSpotTypeLabel(type: SpotType): string {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export function CreateSpotModal({ visible, location, userLocation, onClose, onCreate }: CreateSpotModalProps) {
+export function CreateSpotModal({ visible, location, userLocation, onClose, onCreate, initialSpot, onUpdate }: CreateSpotModalProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const isEditMode = !!initialSpot;
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<SpotType>('other');
@@ -89,15 +93,25 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  // Initialize location: use userLocation if available, otherwise use provided location
+  // Initialize form data when modal opens or initialSpot changes
   useEffect(() => {
     if (visible) {
+      if (initialSpot) {
+        // Modo edición: pre-llenar con datos existentes
+        setName(initialSpot.name || '');
+        setDescription(initialSpot.description || '');
+        setType(initialSpot.type);
+        setPhoto(initialSpot.photos && initialSpot.photos.length > 0 ? initialSpot.photos[0] : null);
+        setCurrentLocation(initialSpot.location);
+      } else {
+        // Modo creación: usar location proporcionada
       const initialLocation = userLocation || location;
       if (initialLocation) {
         setCurrentLocation(initialLocation);
       }
     }
-  }, [visible, userLocation, location]);
+    }
+  }, [visible, userLocation, location, initialSpot]);
 
   // Reset form when modal closes (but not if showing success message)
   useEffect(() => {
@@ -106,14 +120,17 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
     // #endregion
     
     if (!visible && !showSuccessMessage) {
+      // Solo resetear si no estamos en modo edición (los datos se resetearán cuando se cierre completamente)
+      if (!initialSpot) {
       setName('');
       setDescription('');
       setType('other');
       setPhoto(null);
       setAddressSearch('');
+      }
       setShowSuccessMessage(false);
     }
-  }, [visible, showSuccessMessage]);
+  }, [visible, showSuccessMessage, initialSpot]);
 
   // Search address and update location
   const handleSearchAddress = async () => {
@@ -170,10 +187,10 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
     }
   };
 
-  // Handle send
+  // Handle send (create or update)
   const handleSend = () => {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/7807ebbf-84f7-465d-ad24-4eb47c053dcc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CreateSpotModal.tsx:handleSend',message:'handleSend called',data:{hasLocation:!!currentLocation,hasPhoto:!!photo},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/7807ebbf-84f7-465d-ad24-4eb47c053dcc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CreateSpotModal.tsx:handleSend',message:'handleSend called',data:{hasLocation:!!currentLocation,hasPhoto:!!photo,isEditMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
     // #endregion
     
     if (!currentLocation) {
@@ -181,11 +198,39 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
       return;
     }
 
-    if (!photo) {
+    // En modo creación, la foto es requerida. En modo edición, puede mantener la foto existente
+    if (!isEditMode && !photo) {
       Alert.alert('Photo required', 'Please add a photo of the place');
       return;
     }
 
+    if (isEditMode && initialSpot && onUpdate) {
+      // Modo edición: actualizar spot existente
+      const updates: Partial<Spot> = {
+        name: name || undefined,
+        description: description || undefined,
+        type,
+        location: {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          adjustable: true,
+        },
+      };
+
+      // Si hay nueva foto, reemplazar la primera foto
+      if (photo && photo !== initialSpot.photos?.[0]) {
+        updates.photos = [photo, ...(initialSpot.photos?.slice(1) || [])];
+      }
+
+      onUpdate(initialSpot.id, updates);
+      
+      // Mostrar mensaje de éxito
+      setShowSuccessMessage(true);
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
+    } else {
+      // Modo creación: crear nuevo spot
     const newSpot: Omit<Spot, 'id' | 'createdAt' | 'updatedAt'> = {
       name: name || undefined,
       location: {
@@ -193,7 +238,7 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
         longitude: currentLocation.longitude,
         adjustable: true,
       },
-      photos: [photo],
+        photos: photo ? [photo] : [],
       description: description || undefined,
       type,
     };
@@ -224,6 +269,7 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
       // #endregion
       handleClose();
     }, 3000);
+    }
   };
 
   const handleClose = () => {
@@ -263,10 +309,10 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
           >
             <Icon name="like" size={48} color={colors.tint} />
             <Text style={[textStyles.heading4, { color: colors.text, marginTop: spacing.md, textAlign: 'center' }]}>
-              Thanks for sharing
+              {isEditMode ? 'Spot updated' : 'Thanks for sharing'}
             </Text>
             <Text style={[textStyles.body, { color: colors.icon, marginTop: spacing.sm, textAlign: 'center' }]}>
-              Your spot is being reviewed and will be available soon.
+              {isEditMode ? 'Your changes have been saved.' : 'Your spot is being reviewed and will be available soon.'}
             </Text>
           </GlassView>
         </View>
@@ -397,6 +443,7 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
                           latitudeDelta: 0.01,
                           longitudeDelta: 0.01,
                         }}
+                        userLocation={userLocation}
                       />
                     </View>
                     <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs }]}>
@@ -481,13 +528,13 @@ export function CreateSpotModal({ visible, location, userLocation, onClose, onCr
               <TouchableOpacity
                 style={[
                   styles.sendButton,
-                  { backgroundColor: photo ? colors.tint : colors.icon + '40' },
+                  { backgroundColor: (isEditMode || photo) ? colors.tint : colors.icon + '40' },
                 ]}
                 onPress={handleSend}
-                disabled={!photo}
+                disabled={!isEditMode && !photo}
                 activeOpacity={0.7}>
-                <Text style={[textStyles.bodyMedium, { color: photo ? colors.background : colors.icon }]}>
-                  Send
+                <Text style={[textStyles.bodyMedium, { color: (isEditMode || photo) ? colors.background : colors.icon }]}>
+                  {isEditMode ? 'Save' : 'Send'}
                 </Text>
               </TouchableOpacity>
             </View>

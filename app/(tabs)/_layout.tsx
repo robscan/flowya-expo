@@ -1,10 +1,11 @@
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, View, useEffect } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useOverlay } from '@/contexts/OverlayContext';
 
 import { Icon } from '@/components/ui/Icon';
 import { Colors } from '@/constants/theme';
+import { spacing } from '@/constants/spacing';
 import { fontFamily, fontSize } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { glassColors, glowColors, shadows } from '@/utils/glassStyles';
@@ -74,10 +75,10 @@ export default function TabLayout() {
               fontFamily,
               fontSize: fontSize.xs, // 12px - tamaño pequeño pero legible
               fontWeight: '400',
-              marginTop: 4, // Más espacio entre icono y label (cambió de -4 a 4)
+              marginTop: spacing.xs / 2, // 4px - Más espacio entre icono y label (valor mínimo necesario)
             },
             tabBarItemStyle: {
-              gap: 4, // Espacio adicional entre icono y label
+              gap: spacing.xs / 2, // 4px - Espacio adicional entre icono y label (valor mínimo necesario)
             },
             tabBarIndicatorStyle: {
               backgroundColor: Colors[colorScheme ?? 'light'].tint, // Color del indicador (mismo que tab activo)
@@ -101,10 +102,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="gems"
+          name="map"
             options={{
-            title: 'Gems',
-            tabBarIcon: ({ color }) => <Icon name="gems" size={28} color={color} />,
+            title: 'Map',
+            tabBarIcon: ({ color }) => <Icon name="map" size={28} color={color} />,
             }}
           />
           <Tabs.Screen
@@ -125,6 +126,20 @@ export default function TabLayout() {
             name="profile"
             options={{
             href: null, // Ocultar Profile del tab bar
+              headerShown: false,
+            }}
+          />
+          <Tabs.Screen
+            name="login"
+            options={{
+              href: null, // Ocultar Login del tab bar pero mostrar tab bar
+              headerShown: false,
+            }}
+          />
+          <Tabs.Screen
+            name="signup"
+            options={{
+              href: null, // Ocultar Signup del tab bar pero mostrar tab bar
               headerShown: false,
             }}
           />

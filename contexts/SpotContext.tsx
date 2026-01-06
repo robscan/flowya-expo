@@ -14,8 +14,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Spot } from '@/data/spots';
 import { mockSpots } from '@/data/spots';
+import { generateSpotContent as generateAIContent, GenerateContentOptions } from '@/utils/aiContentGenerator';
+import { useAuth } from './AuthContext';
 
-const STORAGE_KEY = '@mini_tours_spots';
+const STORAGE_KEY = '@flowya_spots';
 
 interface SpotContextType {
   spots: Spot[];
@@ -25,6 +27,8 @@ interface SpotContextType {
   createSpot: (spot: Omit<Spot, 'id' | 'createdAt' | 'updatedAt'>) => Spot;
   updateSpot: (id: string, updates: Partial<Spot>) => void;
   deleteSpot: (id: string) => void;
+  generateSpotContent: (spotId: string, options?: GenerateContentOptions) => Promise<void>;
+  refreshSpots: () => Promise<void>;
 }
 
 const SpotContext = createContext<SpotContextType | undefined>(undefined);
@@ -32,6 +36,7 @@ const SpotContext = createContext<SpotContextType | undefined>(undefined);
 export function SpotProvider({ children }: { children: ReactNode }) {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   // Cargar spots desde AsyncStorage
   useEffect(() => {
@@ -47,6 +52,7 @@ export function SpotProvider({ children }: { children: ReactNode }) {
 
   const loadSpots = async () => {
     try {
+      setIsLoading(true);
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -70,6 +76,11 @@ export function SpotProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshSpots = async () => {
+    // Recargar spots desde AsyncStorage
+    await loadSpots();
+  };
+
   const saveSpots = async (spotsToSave: Spot[]) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(spotsToSave));
@@ -91,6 +102,7 @@ export function SpotProvider({ children }: { children: ReactNode }) {
     const newSpot: Spot = {
       ...spotData,
       id: `spot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdBy: user?.id, // Guardar ID del usuario que crea el spot
       createdAt: now,
       updatedAt: now,
     };
@@ -113,6 +125,29 @@ export function SpotProvider({ children }: { children: ReactNode }) {
     setSpots((prev) => prev.filter((spot) => spot.id !== id));
   };
 
+  const generateSpotContent = async (spotId: string, options?: GenerateContentOptions): Promise<void> => {
+    const spot = getSpotById(spotId);
+    if (!spot) {
+      throw new Error(`Spot with id ${spotId} not found`);
+    }
+
+    try {
+      const generatedContent = await generateAIContent(spot, options);
+      
+      // Actualizar spot con contenido generado
+      updateSpot(spotId, {
+        whyItMatters: generatedContent.whyItMatters || spot.whyItMatters,
+        culturalContext: generatedContent.culturalContext || spot.culturalContext,
+        howToVisit: generatedContent.howToVisit || spot.howToVisit,
+        narration: generatedContent.narration || spot.narration,
+        aiGenerated: generatedContent.aiGenerated || spot.aiGenerated,
+      });
+    } catch (error) {
+      console.error('Error generating spot content:', error);
+      throw error;
+    }
+  };
+
   const value: SpotContextType = {
     spots,
     isLoading,
@@ -121,6 +156,8 @@ export function SpotProvider({ children }: { children: ReactNode }) {
     createSpot,
     updateSpot,
     deleteSpot,
+    generateSpotContent,
+    refreshSpots,
   };
 
   return <SpotContext.Provider value={value}>{children}</SpotContext.Provider>;

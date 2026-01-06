@@ -36,6 +36,7 @@ export const iconMap = {
   home: 'home',
   notMyVibe: 'thumb-down',
   navigation: 'navigation',
+  directions: 'directions',
   add: 'add',
   star: 'star',
   'chevron-down': 'keyboard-arrow-down',
@@ -48,6 +49,20 @@ export const iconMap = {
   report: 'flag',
   delete: 'delete',
   minimize: 'keyboard-arrow-down',
+  plus: 'add',
+  minus: 'remove',
+  'map-pin': 'place',
+  upload: 'cloud-upload',
+  // Weather icons
+  'weather-sunny': 'wb-sunny',
+  'weather-cloudy': 'cloud',
+  'weather-rain': 'grain',
+  'weather-snow': 'ac-unit',
+  'weather-thunderstorm': 'flash-on',
+  'weather-mist': 'blur',
+  'weather-fog': 'blur',
+  'weather-drizzle': 'grain',
+  'weather-moon': 'nightlight-round',
 } as const;
 
 export type IconName = keyof typeof iconMap;

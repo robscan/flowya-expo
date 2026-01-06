@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, Dimensions, LayoutAnimation, Platform, UIManager, RefreshControl } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import * as Location from 'expo-location';
 
@@ -49,10 +49,11 @@ export default function SavedScreen() {
   const lastScrollY = useRef(0);
   const isLabelsVisible = useRef(true);
 
-  const { spots, isLoading: spotsLoading } = useSpot();
-  const { paths, isLoading: pathsLoading } = usePath();
+  const { spots, isLoading: spotsLoading, refreshSpots } = useSpot();
+  const { paths, isLoading: pathsLoading, refreshFlows } = usePath();
   const { savedSpots, savedPaths, timeline, isLoading: savedLoading } = useSaved();
   const { startFlow } = useFlow();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isLoading = spotsLoading || pathsLoading || savedLoading;
 
@@ -264,16 +265,16 @@ export default function SavedScreen() {
       <View style={styles.emptyState}>
         <Icon name="bookmark" size={48} color={colors.icon} />
         <Text style={[textStyles.heading4, { color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          No saved items yet
+          Nothing saved yet
         </Text>
         <Text style={[textStyles.body, { color: colors.icon, marginBottom: spacing.lg, textAlign: 'center' }]}>
-          Start exploring and save spots and paths you want to visit later
+          Mark places and save flows to visit later
         </Text>
         <TouchableOpacity
           onPress={() => router.push('/(tabs)/home')}
           style={[styles.emptyStateButton, { backgroundColor: colors.tint }]}
           activeOpacity={0.8}>
-          <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>Explore Home</Text>
+          <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>Explore</Text>
         </TouchableOpacity>
       </View>
     );
@@ -287,8 +288,8 @@ export default function SavedScreen() {
         <View style={styles.savedContent}>
           {hasContent ? (
             <>
-              {renderSpotSlider('Saved - Spots', savedSpotsData)}
-              {renderPathSlider('Saved - Paths', savedPathsData)}
+              {renderSpotSlider('Saved places', savedSpotsData)}
+              {renderPathSlider('Saved flows', savedPathsData)}
             </>
           ) : (
             renderSavedEmptyState()
@@ -304,16 +305,16 @@ export default function SavedScreen() {
             <View style={styles.emptyState}>
               <Icon name="clock" size={48} color={colors.icon} />
               <Text style={[textStyles.heading4, { color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-                No history yet
+                No history
               </Text>
               <Text style={[textStyles.body, { color: colors.icon, marginBottom: spacing.lg, textAlign: 'center' }]}>
-                Start a flow and visit spots to see your navigation history here
+                Start a flow to see places you've visited
               </Text>
               <TouchableOpacity
                 onPress={() => router.push('/(tabs)/home')}
                 style={[styles.emptyStateButton, { backgroundColor: colors.tint }]}
                 activeOpacity={0.8}>
-                <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>Explore Home</Text>
+                <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>Explore</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -338,7 +339,18 @@ export default function SavedScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
-          scrollEventThrottle={16}>
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={async () => {
+                setIsRefreshing(true);
+                await Promise.all([refreshSpots(), refreshFlows()]);
+                setIsRefreshing(false);
+              }}
+              tintColor={colors.tint}
+            />
+          }>
           {/* Header inside ScrollView (scrolls) */}
           <View
             style={[

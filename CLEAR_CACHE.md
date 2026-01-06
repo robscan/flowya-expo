@@ -16,7 +16,7 @@ Si estás usando Expo Go o un dispositivo físico, puedes ejecutar este código 
 
 ```javascript
 import AsyncStorage from '@react-native-async-storage/async-storage';
-AsyncStorage.multiRemove(['@mini_tours_spots', '@mini_tours_paths', '@mini_tours_saved']);
+AsyncStorage.multiRemove(['@flowya_spots', '@flowya_flows', '@flowya_saved', '@flowya_preferences']);
 ```
 
 ### Limpiar caché de Metro/Expo

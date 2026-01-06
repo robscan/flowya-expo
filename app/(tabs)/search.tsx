@@ -25,7 +25,6 @@ import { GlassView } from '@/components/ui/GlassView';
 import { SearchBar } from '@/components/SearchBar';
 import { SearchSuggestion } from '@/components/SearchSuggestion';
 import { SearchResultCard } from '@/components/SearchResultCard';
-import { CreateSpotModal } from '@/components/CreateSpotModal';
 import { useSpot } from '@/contexts/SpotContext';
 import { usePath } from '@/contexts/PathContext';
 import { useFlow } from '@/contexts/FlowContext';
@@ -38,6 +37,7 @@ import { FlowCard } from '@/components/FlowCard';
 import { SearchCategoryCard } from '@/components/SearchCategoryCard';
 import { SimpleMapView } from '@/components/SimpleMapView';
 import { Icon, iconTouchableContainer } from '@/components/ui/Icon';
+import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 
 // Helper to get readable type name (same as in SpotCard)
 function getSpotTypeLabel(type: SpotType): string {
@@ -66,12 +66,13 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeTab, setActiveTab] = useState<'results' | 'map'>('results');
-  const [isCreateSpotModalVisible, setIsCreateSpotModalVisible] = useState(false);
-  const [createSpotLocation, setCreateSpotLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<SpotType | null>(null);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'relevance' | 'distance' | 'recent' | 'alphabetical'>('relevance');
+  const SEARCH_HISTORY_KEY = '@flowya_search_history';
 
-  const { spots, isLoading: spotsLoading, createSpot, getSpotById } = useSpot();
+  const { spots, isLoading: spotsLoading, getSpotById } = useSpot();
   const { paths, isLoading: pathsLoading, getPathById } = usePath();
   const { startFlow } = useFlow();
   const isLoading = spotsLoading || pathsLoading;
@@ -233,8 +234,35 @@ export default function SearchScreen() {
     return results;
   }, [searchQuery, spots, paths, userLocation, selectedCategory]);
 
-  const hasResults = searchResults.spots.length > 0 || searchResults.paths.length > 0;
-  const showSuggestions = isSearchFocused && suggestions.length > 0 && !hasResults;
+  // Apply sorting to results
+  const sortedResults = useMemo(() => {
+    const sorted = { ...searchResults };
+    
+    if (sortBy === 'distance' && userLocation) {
+      sorted.spots.sort((a, b) => {
+        const distA = a.distance || Infinity;
+        const distB = b.distance || Infinity;
+        return distA - distB;
+      });
+    } else if (sortBy === 'recent') {
+      sorted.spots.sort((a, b) => {
+        if (!a.spot || !b.spot) return 0;
+        return new Date(b.spot.createdAt).getTime() - new Date(a.spot.createdAt).getTime();
+      });
+    } else if (sortBy === 'alphabetical') {
+      sorted.spots.sort((a, b) => {
+        const nameA = a.spot?.name || '';
+        const nameB = b.spot?.name || '';
+        return nameA.localeCompare(nameB);
+      });
+    }
+    // 'relevance' is already sorted in searchResults
+    
+    return sorted;
+  }, [searchResults, sortBy, userLocation]);
+
+  const hasResults = sortedResults.spots.length > 0 || sortedResults.paths.length > 0;
+  const showSuggestions = isSearchFocused && (suggestions.length > 0 || searchHistory.length > 0) && !hasResults;
   const showResults = (searchQuery.trim().length >= 2 || selectedCategory) && hasResults;
   const showNoResults = (searchQuery.trim().length >= 2 || selectedCategory) && !hasResults && !isSearchFocused;
   const showEmpty = searchQuery.trim().length === 0 && !isSearchFocused && !selectedCategory;
@@ -301,27 +329,33 @@ export default function SearchScreen() {
     startFlow(pathId);
   };
 
+  // Handle search query change and save to history
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+  };
+
+  // Handle search submit
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim().length >= 2) {
+      saveToHistory(searchQuery);
+    }
+  };
+
+  // Handle selecting from history
+  const handleHistorySelect = (query: string) => {
+    setSearchQuery(query);
+    saveToHistory(query);
+    Keyboard.dismiss();
+  };
+
   // Manejar creación de Spot desde búsqueda
   const handleCreateSpotFromSearch = () => {
     // Usar ubicación del usuario si está disponible, sino usar ubicación por defecto
-    setCreateSpotLocation(
-      userLocation || {
+    const location = userLocation || {
         latitude: -12.0464,
         longitude: -77.0428,
-      }
-    );
-    setIsCreateSpotModalVisible(true);
-  };
-
-  const handleCreateSpot = (spotData: Omit<Spot, 'id' | 'createdAt' | 'updatedAt'>) => {
-    createSpot(spotData);
-    // Don't close modal immediately - let CreateSpotModal handle it after showing success message
-    setSearchQuery(''); // Clear search after creating
-  };
-
-  const handleCloseCreateSpotModal = () => {
-    setIsCreateSpotModalVisible(false);
-    setCreateSpotLocation(null);
+    };
+    router.push(`/create-spot?lat=${location.latitude}&lng=${location.longitude}`);
   };
 
   return (
@@ -360,10 +394,11 @@ export default function SearchScreen() {
             </View>
             <SearchBar
               value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search Spots and Paths..."
+              onChangeText={handleSearchChange}
+              placeholder="Search places..."
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
+              onSubmitEditing={handleSearchSubmit}
             />
           </View>
 
@@ -425,12 +460,35 @@ export default function SearchScreen() {
             </View>
           )}
 
-          {/* Suggestions */}
+          {/* Suggestions and History */}
           {showSuggestions && (
             <View style={styles.suggestionsContainer}>
-              <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.sm }]}>
-                Suggestions
-              </Text>
+              {/* Search History */}
+              {searchHistory.length > 0 && searchQuery.trim().length === 0 && (
+                <>
+                  <Text style={[textStyles.bodyMedium, { color: colors.icon, marginBottom: spacing.sm }]}>
+                    Recent searches
+                  </Text>
+                  {searchHistory.slice(0, 5).map((query, index) => (
+                    <TouchableOpacity
+                      key={`history-${index}`}
+                      style={[styles.historyItem, { backgroundColor: colors.background + '80' }]}
+                      onPress={() => handleHistorySelect(query)}
+                      activeOpacity={0.7}>
+                      <Icon name="clock" size={16} color={colors.icon} />
+                      <Text style={[textStyles.body, { color: colors.text, marginLeft: spacing.sm, flex: 1 }]}>
+                        {query}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  {suggestions.length > 0 && (
+                    <Text style={[textStyles.bodyMedium, { color: colors.icon, marginTop: spacing.md, marginBottom: spacing.sm }]}>
+                      Suggestions
+                    </Text>
+                  )}
+                </>
+              )}
+              {/* Suggestions */}
               {suggestions.map((suggestion) => (
                 <SearchSuggestion
                   key={`${suggestion.type}-${suggestion.id}`}
@@ -484,13 +542,13 @@ export default function SearchScreen() {
               {showResults && (
             <>
               {/* Spots - Results (Slider horizontal) */}
-              {searchResults.spots.length > 0 && (
+              {sortedResults.spots.length > 0 && (
                 <View style={styles.section}>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Spots - Results ({searchResults.spots.length})
+                    Places ({sortedResults.spots.length})
                   </Text>
                   <FlatList
-                    data={searchResults.spots}
+                    data={sortedResults.spots}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.sliderContent}
@@ -517,16 +575,16 @@ export default function SearchScreen() {
               )}
 
               {/* Paths - Results (Lista vertical) */}
-              {searchResults.paths.length > 0 && (
+              {sortedResults.paths.length > 0 && (
                 <View style={styles.section}>
                   <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: spacing.xs / 2 }]}>
-                    Paths - Results ({searchResults.paths.length})
+                    Flows ({sortedResults.paths.length})
                   </Text>
                   <Text style={[textStyles.caption, { color: colors.icon, marginTop: 0, marginBottom: spacing.md, paddingHorizontal: spacing.md }]}>
-                    Curated routes connecting multiple spots
+                    Suggested paths
                   </Text>
                   <View style={styles.pathsList}>
-                    {searchResults.paths.map((result) => {
+                    {sortedResults.paths.map((result) => {
                       if (!result.path) return null;
                       const pathSpots = result.path.spots
                         .map((spotId) => spots.find((s) => s.id === spotId))
@@ -553,18 +611,22 @@ export default function SearchScreen() {
               {/* Sin resultados - opción de crear Spot */}
           {showNoResults && (
             <View style={styles.noResultsContainer}>
-              <Text style={[textStyles.heading4, { color: colors.text, marginBottom: spacing.sm }]}>
-                No results found
+              <Icon name="search" size={48} color={colors.icon + '60'} />
+              <Text style={[textStyles.heading4, { color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs }]}>
+                Nothing found
               </Text>
-              <Text style={[textStyles.body, { color: colors.icon, marginBottom: spacing.md, textAlign: 'center' }]}>
-                We couldn't find "{searchQuery}" in available Spots or Paths.
+              <Text style={[textStyles.body, { color: colors.icon, marginBottom: spacing.lg, textAlign: 'center' }]}>
+                No places or flows match "{searchQuery}"
+              </Text>
+              <Text style={[textStyles.caption, { color: colors.icon, marginBottom: spacing.md, textAlign: 'center' }]}>
+                Try different words or mark a new place
               </Text>
               <TouchableOpacity
                 style={[styles.createButton, { backgroundColor: colors.tint }]}
                 onPress={handleCreateSpotFromSearch}
                 activeOpacity={0.7}>
                 <Text style={[textStyles.bodyMedium, { color: '#fff' }]}>
-                  Create new Spot
+                  Mark place
                 </Text>
               </TouchableOpacity>
             </View>
@@ -614,6 +676,7 @@ export default function SearchScreen() {
               <SimpleMapView
                 spots={mapSpots}
                 onSpotPress={handleSpotPress}
+                userLocation={userLocation}
               />
             </View>
           )}
@@ -621,14 +684,6 @@ export default function SearchScreen() {
       )}
 
 
-      {/* Create Spot Modal */}
-      <CreateSpotModal
-        visible={isCreateSpotModalVisible}
-        location={createSpotLocation}
-        userLocation={userLocation}
-        onClose={handleCloseCreateSpotModal}
-        onCreate={handleCreateSpot}
-      />
     </KeyboardAvoidingView>
   );
 }
@@ -732,8 +787,10 @@ const styles = StyleSheet.create({
     minHeight: 400,
   },
   noResultsContainer: {
-    padding: spacing.xl,
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
   },
   createButton: {
     paddingHorizontal: spacing.md,
@@ -748,11 +805,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing['2xl'],
+    paddingHorizontal: spacing.lg,
+  },
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
   },
   loadingState: {
     flex: 1,
+    paddingVertical: spacing.md,
+  },
+  skeletonContainer: {
+    paddingTop: spacing.md,
+  },
+  historyItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    marginBottom: spacing.xs,
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  sortOptions: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  sortOption: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: 8,
   },
 });

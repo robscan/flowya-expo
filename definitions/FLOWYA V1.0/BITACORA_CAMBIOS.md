@@ -4,6 +4,37 @@ Este documento registra todos los cambios, mejoras y ajustes realizados durante 
 
 ---
 
+## 2024-12-20 - Mejoras de UI/UX
+
+### FlowCard - Reestructuración de layout
+- **Componente**: `components/FlowCard.tsx`
+- **Cambios**:
+  - Ajustado layout a dos columnas claramente definidas
+  - Columna izquierda: título + chip de movement mode
+  - Columna derecha: metadata (distancia, duración, número de spots) con iconos
+  - Mejorado truncamiento de texto con `flexShrink` y `minWidth: 0`
+  - Agregado `flexWrap` y `justifyContent: 'flex-end'` a metadata para mejor alineación
+  - Cambiado `alignItems: 'center'` a `alignItems: 'flex-start'` en content para mejor alineación vertical
+
+### FlowDetailScreen - Imagen de portada (CORRECCIÓN)
+- **Componente**: `app/flow-detail.tsx`
+- **Cambios**:
+  - Agregada imagen de portada al inicio del ScrollView (corrección: se había implementado incorrectamente en FlowScreen)
+  - Implementada función `getAllFlowPhotos()` usando `useMemo` para obtener todas las fotos de los spots del flow
+  - Selección aleatoria inicial de foto de portada usando `useState`
+  - Rotación automática de imágenes cada 5 segundos (slider) usando `useEffect`
+  - Imagen panorámica scrollable con el contenido (alineada a reglas de SpotDetail)
+  - Altura de imagen: 40% de la altura de pantalla (igual que SpotDetail)
+  - Placeholder con icono cuando no hay fotos disponibles
+  - Rotación activa cuando hay más de una foto
+- **Archivos modificados**:
+  - `app/flow-detail.tsx`: Agregado import de `Image` y `Dimensions`, función `getAllFlowPhotos` (useMemo), estado `coverImageIndex`, efecto de rotación, componente de imagen de portada, estilos `coverImageContainer`, `coverImage`, `coverImagePlaceholder`
+  - `components/FlowScreen.tsx`: Revertidos cambios de portada (se había implementado incorrectamente aquí)
+
+---
+
+---
+
 ## 2024-12-19 - Migración de Mini Tours a FLOWYA
 
 ### Cambios de Nombre

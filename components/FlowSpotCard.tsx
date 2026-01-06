@@ -30,6 +30,7 @@ interface FlowSpotCardProps {
   index: number; // Número de orden en el flow (0-based)
   onPress?: () => void;
   distance?: number; // En metros (opcional)
+  estimatedTime?: number; // En minutos (opcional)
   isActive?: boolean; // Estado activo/inactivo del número
 }
 
@@ -52,7 +53,7 @@ function formatDistance(distance?: number, useMiles: boolean = false): string | 
   return `${(distance / 1000).toFixed(1)} km`;
 }
 
-export function FlowSpotCard({ spot, index, onPress, distance, isActive = false }: FlowSpotCardProps) {
+export function FlowSpotCard({ spot, index, onPress, distance, estimatedTime, isActive = false }: FlowSpotCardProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const [useMiles, setUseMiles] = useState(false);
@@ -113,17 +114,27 @@ export function FlowSpotCard({ spot, index, onPress, distance, isActive = false 
             )}
           </View>
 
-          {/* Distance (right) */}
+          {/* Distance and Time (right) */}
           {distanceText && (
-            <TouchableOpacity
-              onPress={handleDistancePress}
-              activeOpacity={0.7}
-              style={styles.distanceContainer}>
-              <Icon name="map" size={14} color={colors.icon} />
-              <Text style={[styles.distanceText, { color: colors.icon }]}>
-                {distanceText}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.distanceTimeContainer}>
+              <TouchableOpacity
+                onPress={handleDistancePress}
+                activeOpacity={0.7}
+                style={styles.distanceContainer}>
+                <Icon name="map" size={14} color={colors.icon} />
+                <Text style={[styles.distanceText, { color: colors.icon }]}>
+                  {distanceText}
+                </Text>
+              </TouchableOpacity>
+              {estimatedTime !== undefined && estimatedTime !== null && (
+                <>
+                  <Text style={[styles.separator, { color: colors.icon }]}>•</Text>
+                  <Text style={[styles.timeText, { color: colors.icon }]}>
+                    {estimatedTime} min
+                  </Text>
+                </>
+              )}
+            </View>
           )}
         </View>
       </GlassView>
@@ -182,13 +193,30 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.sm,
     fontWeight: '400',
   },
-  distanceContainer: {
+  distanceTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs / 2,
     flexShrink: 0,
   },
+  distanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+  },
   distanceText: {
+    fontFamily,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.xs,
+    fontWeight: '400',
+  },
+  separator: {
+    fontFamily,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.xs,
+    fontWeight: '400',
+  },
+  timeText: {
     fontFamily,
     fontSize: fontSize.xs,
     lineHeight: lineHeight.xs,

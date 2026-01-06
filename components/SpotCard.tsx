@@ -27,6 +27,7 @@ import { GlassView } from '@/components/ui/GlassView';
 import { Icon } from '@/components/ui/Icon';
 import { iconTouchableContainer } from '@/components/ui/Icon';
 import { useSaved } from '@/contexts/SavedContext';
+import { hasValidImage } from '@/utils/imageHelpers';
 
 interface SpotCardProps {
   spot: Spot;
@@ -100,7 +101,7 @@ export function SpotCard({ spot, onPress, onMapPress, onSave, distance, inSlider
     }
   };
 
-  const hasImage = spot.photos && spot.photos.length > 0;
+  const hasImage = hasValidImage(spot.photos);
 
   const handleSavePress = (e: any) => {
     e.stopPropagation();
@@ -118,7 +119,7 @@ export function SpotCard({ spot, onPress, onMapPress, onSave, distance, inSlider
         useGrayBackground={!hasImage} // Fondo gris cuando no hay imagen
       >
         {/* Foto principal con overlay de acciones */}
-        {hasImage ? (
+        {hasImage && spot.photos && spot.photos.length > 0 ? (
           <View style={styles.imageContainer}>
             <Image source={{ uri: spot.photos[0] }} style={styles.image} resizeMode="cover" />
             {/* Tag del tipo en esquina superior izquierda */}
@@ -141,7 +142,7 @@ export function SpotCard({ spot, onPress, onMapPress, onSave, distance, inSlider
           </View>
         ) : (
           <View style={[styles.imagePlaceholder, { backgroundColor: colors.icon + '20' }]}>
-            <Icon name="map" size={32} color={colors.icon} />
+            <Icon name="upload" size={32} color={colors.icon} />
             {/* Tag del tipo en esquina superior izquierda */}
             <View style={[styles.imageTag, { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }]}>
               <Text style={[styles.chipText, { color: colorScheme === 'dark' ? '#fff' : colors.text }]}>
@@ -173,7 +174,7 @@ export function SpotCard({ spot, onPress, onMapPress, onSave, distance, inSlider
             <Text style={[styles.descriptionText, { color: colors.icon }]}>Unnamed</Text>
             )}
 
-          {/* Descripción (opcional) */}
+          {/* Description (optional) */}
           {spot.description && (
             <Text style={[styles.descriptionText, { color: colors.text }]} numberOfLines={2}>
               {spot.description}
@@ -233,11 +234,15 @@ const styles = StyleSheet.create({
     marginBottom: 0, // Remove margin when in slider
     width: '100%', // Full width in slider
     alignSelf: 'stretch', // Stretch to fill container
+    paddingVertical: spacing.xs, // 8px - Allow shadow to show
+    paddingHorizontal: spacing.xs, // 8px - Small horizontal padding for shadows
   },
   card: {
     borderRadius: 16, // Múltiplo de 8
     overflow: 'hidden',
     // NO bordes visibles, separación por espacio
+    // Note: overflow: 'hidden' is needed for border radius clipping of image content
+    // Shadow will be visible due to padding on cardContainerSlider
   },
   imageContainer: {
     width: '100%',

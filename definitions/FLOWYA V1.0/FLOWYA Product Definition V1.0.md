@@ -105,6 +105,18 @@ Cuando un Spot está incompleto, el sistema puede:
 - investigar el lugar
 - proponer nombre y descripción
 - sugerir horarios y costos
+- generar contenido visual (whyItMatters, culturalContext, howToVisit)
+- generar narrativas emocionales para audio (anticipation, presence, transition)
+
+El sistema utiliza inteligencia artificial (AI) para curar y redactar contenido.
+El contenido generado es emocional, contemplativo, con frases cortas y respirables.
+No explica todo - acompaña.
+
+**Reglas del sistema de enriquecimiento:**
+- El sistema no duplica contenido existente: si un Spot ya tiene información, la usa y no la regenera
+- El contenido generado se cachea en el Spot (no se regenera a menos que se solicite explícitamente)
+- La generación es bajo demanda: solo se genera cuando el usuario lo solicita o cuando falta contenido crítico
+- El sistema funciona incluso si la AI falla: usa contenido existente o genérico como fallback
 
 El usuario puede aceptar, corregir o ignorar.
 El usuario no es responsable editorial total.
@@ -187,7 +199,7 @@ El usuario puede:
 
 **Navegación principal (Tab Bar):**
 - Home
-- Gems
+- Map
 - Saved
 - Search
 
@@ -206,7 +218,7 @@ El usuario puede:
 
 ### HOME
 
-Home se divide en dos tabs internos.
+Home muestra contenido contextual e inmediato.
 
 #### HOME · EXPLORE
 
@@ -217,39 +229,36 @@ Responde a: ¿Qué puedo hacer aquí y ahora?
 **Estructura de contenido:**
 - Sliders horizontales de Spots con diferentes jerarquías:
   - **Jerarquía alta (card completa)**: "Cercanos", "Para ti - Spots", "Recomendados - Spots"
-  - **Jerarquía menor (card compacta)**: "Vistos recientemente", "Tal vez te guste"
+  - **Jerarquía menor (card compacta)**: "Vistos recientemente", "Maybe You Like - Spots" (información Global), "New - Spots" (información Global)
 - Listados verticales de Paths con títulos claros: "Paths cercanos"
 
 **Tipos de cards:**
 - **SpotCard (jerarquía alta)**: Card completa con imagen, título, descripción, distancia y acciones
 - **SpotCardCompact (jerarquía menor)**: Card compacta con imagen cuadrada de 160px, título debajo de la imagen (sin envolvente), distancia + "View on map", sin descripción
 
-#### HOME · MAP
+**Nota sobre información Global:**
+- "Maybe You Like - Spots" y "New - Spots" se distinguen como información Global (no basada en ubicación del usuario).
+- "Maybe You Like" contiene spots destacados globalmente (antes "Featured" de Gems).
+- "New - Spots" contiene spots recientes globalmente (antes "Recent" de Gems).
+
+---
+
+### MAP
+
+Map es una sección independiente en el Tab Bar principal.
 
 Exploración libre y planeación.
 Muestra Spots incluso lejanos.
 Permite crear y ajustar Spots.
 
----
+**Estructura:**
+- Header scrollable (igual que otras secciones)
+- Vista de mapa completa con FlowyaMapView
+- Marcadores interactivos para spots
+- Long press para crear nuevo spot
+- Mantiene comportamiento de ocultar labels al desplazar
 
-### GEMS
-
-Gems muestra lo que está brillando ahora.
-
-Incluye:
-- Spots destacados
-- Spots recientes
-- Paths sugeridos
-
-El foco está en notar lugares, no en completar recorridos.
-
-**Estructura de contenido:**
-- Header scrollable (igual que Home)
-- Sliders horizontales de Spots con diferentes categorías:
-  - "Featured" (Destacados) - SpotCard completa
-  - "Recent" (Recientes) - SpotCard completa
-  - "Suggested" (Sugeridos) - SpotCard completa
-- Lista vertical de Paths sugeridos (menor jerarquía, como en Home)
+**Nota:** El contenido de Gems (spots destacados y recientes) se ha integrado a Home como información Global en las secciones "Maybe You Like - Spots" y "New - Spots".
 
 ---
 
@@ -297,9 +306,9 @@ El header de Search sigue el mismo layout consistente que las demás secciones:
 - Icono "+" a la derecha (abre el flujo de crear spot)
 - SearchBar debajo del headerContent
 
-El layout del header es consistente entre todas las secciones (Home, Gems, Saved, Search):
+El layout del header es consistente entre todas las secciones (Home, Map, Saved, Search):
 - Título a la izquierda (`textStyles.heading3`)
-- Icono accionable a la derecha (perfil en Home/Gems/Saved, "+" en Search)
+- Icono accionable a la derecha (perfil en Home/Map/Saved, "+" en Search)
 - Mismo tamaño de icono (24px) y contenedor táctil (`iconTouchableContainer.base`)
 
 #### COMPORTAMIENTO DE BÚSQUEDA

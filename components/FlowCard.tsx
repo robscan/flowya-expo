@@ -125,19 +125,21 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: spacing.sm,
     gap: spacing.md,
   },
   leftContent: {
     flex: 1,
     gap: spacing.xs / 2,
+    minWidth: 0, // Permite que el texto se trunque correctamente
   },
   title: {
     fontFamily: fontFamilyMedium,
     fontSize: fontSize.base,
     lineHeight: lineHeight.base,
     fontWeight: '500',
+    flexShrink: 1, // Permite que el texto se trunque cuando sea necesario
   },
   movementChip: {
     alignSelf: 'flex-start',
@@ -156,6 +158,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     flexShrink: 0,
+    flexWrap: 'wrap', // Permite que los elementos se envuelvan si es necesario
+    justifyContent: 'flex-end',
   },
   metadataItem: {
     flexDirection: 'row',

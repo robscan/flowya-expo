@@ -18,6 +18,7 @@ import { Colors } from '@/constants/theme';
 import { borderRadius } from '@/constants/borders';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Icon } from '@/components/ui/Icon';
+import { hasValidImage } from '@/utils/imageHelpers';
 
 interface SpotCardCompactProps {
   spot: Spot;
@@ -50,7 +51,7 @@ export function SpotCardCompact({ spot, onPress, onMapPress, distance }: SpotCar
   const colors = Colors[colorScheme ?? 'light'];
   const [useMiles, setUseMiles] = useState(false);
 
-  const hasImage = spot.photos && spot.photos.length > 0;
+  const hasImage = hasValidImage(spot.photos);
   const distanceText = formatDistanceHelper(distance || undefined, useMiles);
 
   const handleDistancePress = (e: any) => {
@@ -72,7 +73,7 @@ export function SpotCardCompact({ spot, onPress, onMapPress, distance }: SpotCar
           />
         ) : (
           <View style={[styles.imagePlaceholder, { backgroundColor: colors.icon + '20' }]}>
-            <Icon name="map" size={32} color={colors.icon} />
+            <Icon name="upload" size={32} color={colors.icon} />
           </View>
         )}
       </View>
