@@ -160,17 +160,29 @@ export const MapViewWeb = forwardRef<MapViewWebRef, MapViewWebProps>(({
 
   // Cargar Google Maps y crear instancia
   useEffect(() => {
+    // Debug: siempre mostrar información en consola para ayudar a diagnosticar
+    const debugInfo = {
+      hasEnvVar: !!process.env.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY,
+      keyLength: GOOGLE_MAPS_WEB_API_KEY.length,
+      hasConstants: !!Constants?.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY,
+      constantsValue: Constants?.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY ? 'present' : 'missing',
+      envValue: process.env.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY ? 'present' : 'missing',
+    };
+    
     if (!GOOGLE_MAPS_WEB_API_KEY) {
       const errorMsg = 'Google Maps API key not configured. Please set EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY in your .env file or Vercel environment variables.';
       setError(errorMsg);
-      if (__DEV__) {
-        console.error('MapViewWeb: Google Maps API key missing', {
-          hasEnvVar: !!process.env.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY,
-          keyLength: GOOGLE_MAPS_WEB_API_KEY.length,
-          hasConstants: !!Constants?.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY,
-        });
-      }
+      // Mostrar debug info siempre para ayudar a diagnosticar
+      console.error('MapViewWeb: Google Maps API key missing', debugInfo);
       return;
+    }
+    
+    // Log exitoso solo en desarrollo para no saturar producción
+    if (__DEV__) {
+      console.log('MapViewWeb: Google Maps API key loaded successfully', {
+        keyLength: GOOGLE_MAPS_WEB_API_KEY.length,
+        keyPrefix: GOOGLE_MAPS_WEB_API_KEY.substring(0, 10) + '...',
+      });
     }
 
     let mounted = true;
