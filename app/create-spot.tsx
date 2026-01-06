@@ -28,13 +28,12 @@ import { spacing } from '@/constants/spacing';
 import { textStyles } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useSpot } from '@/contexts/SpotContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { GlassView } from '@/components/ui/GlassView';
 import { generateSpotContent } from '@/utils/aiContentGenerator';
 import { isAIConfigured } from '@/utils/aiConfig';
 import { Icon } from '@/components/ui/Icon';
 import { iconTouchableContainer } from '@/components/ui/Icon';
-import { SimpleMapView } from '@/components/SimpleMapView';
+import { FlowyaMapView } from '@/components/MapView';
 
 const SPOT_TYPES: SpotType[] = [
   'beach',
@@ -69,14 +68,6 @@ export default function CreateSpotScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { createSpot } = useSpot();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace('/(tabs)/login');
-    }
-  }, [isAuthenticated, authLoading, router]);
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -428,28 +419,29 @@ export default function CreateSpotScreen() {
           {/* Map */}
           {currentLocation && (
             <>
-              <View style={styles.mapContainer}>
-                <SimpleMapView
-                  spots={[{
-                    id: 'temp-spot',
-                    name: 'New Spot',
-                    location: currentLocation,
-                    photos: [],
-                    type: 'other',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  }]}
-                  onSpotPress={() => {}}
-                  onLongPress={handleLocationChange}
-                  initialRegion={{
-                    latitude: currentLocation.latitude,
-                    longitude: currentLocation.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  userLocation={userLocation}
-                />
-              </View>
+                    <View style={styles.mapContainer}>
+                      <FlowyaMapView
+                        spots={[{
+                          id: 'temp-spot',
+                          name: 'New Spot',
+                          location: currentLocation,
+                          photos: [],
+                          type: 'other',
+                          createdAt: new Date(),
+                          updatedAt: new Date(),
+                        }]}
+                        onSpotPress={() => {}}
+                        onLongPress={handleLocationChange}
+                        initialRegion={{
+                          latitude: currentLocation.latitude,
+                          longitude: currentLocation.longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        }}
+                        userLocation={userLocation}
+                        showUserLocation={!!userLocation}
+                      />
+                    </View>
               <Text style={[textStyles.caption, { color: colors.icon, marginTop: spacing.xs }]}>
                 {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
               </Text>

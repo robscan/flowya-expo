@@ -15,8 +15,9 @@ import { Pressable, StyleSheet, Text, TouchableOpacity, View, Image, Animated } 
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 
+import { FlowPlayerControls } from '@/components/FlowPlayerControls';
 import { GlassView } from '@/components/ui/GlassView';
-import { Icon, iconTouchableContainer } from '@/components/ui/Icon';
+import { Icon } from '@/components/ui/Icon';
 import { spacing } from '@/constants/spacing';
 import { Colors } from '@/constants/theme';
 import { textStyles, fontSize, lineHeight, fontFamily, fontFamilyMedium } from '@/constants/typography';
@@ -59,7 +60,7 @@ export function FlowMiniPlayer({ onExpand }: FlowMiniPlayerProps) {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { flowState, currentSpotId, expandFlow, pauseFlow, resumeFlow, previousSpot, nextSpot } = useFlow();
+  const { flowState, currentSpotId, expandFlow } = useFlow();
   const { getFlowById } = usePath();
   const { getSpotById } = useSpot();
   const { tabBarHeight } = useOverlay(); // Obtener altura dinámica del tab bar
@@ -118,24 +119,7 @@ export function FlowMiniPlayer({ onExpand }: FlowMiniPlayerProps) {
     }
   };
 
-  const handlePlayPause = (e: any) => {
-    e.stopPropagation();
-    if (flowState.status === 'active') {
-      pauseFlow();
-    } else if (flowState.status === 'paused') {
-      resumeFlow();
-    }
-  };
-
-  const handlePrevious = (e: any) => {
-    e.stopPropagation();
-    previousSpot();
-  };
-
-  const handleNext = (e: any) => {
-    e.stopPropagation();
-    nextSpot();
-  };
+  // handlePlayPause, handlePrevious, handleNext ahora están en FlowPlayerControls
 
   const handleExpand = () => {
     // Expandir FlowScreen desde minimizado
@@ -194,33 +178,15 @@ export function FlowMiniPlayer({ onExpand }: FlowMiniPlayerProps) {
             )}
           </View>
 
-          {/* Controles: Atrás, Play/Pause, Adelante */}
-          <View style={staticStyles.controls}>
-            <TouchableOpacity
-              onPress={handlePrevious}
-              style={staticStyles.controlButton}
-              activeOpacity={0.7}>
-              <Icon name="previous" size={18} color={colors.icon} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={handlePlayPause}
-              style={staticStyles.controlButton}
-              activeOpacity={0.7}>
-              <Icon 
-                name={flowState.status === 'paused' ? 'play' : 'pause'} 
-                size={20} 
-                color={colors.tint} 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={handleNext}
-              style={staticStyles.controlButton}
-              activeOpacity={0.7}>
-              <Icon name="next" size={18} color={colors.icon} />
-            </TouchableOpacity>
-          </View>
+          {/* Controles: Atrás, Play/Pause, Adelante, Mute */}
+          <FlowPlayerControls
+            variant="mini"
+            showPrevious={true}
+            showNext={true}
+            showMute={true}
+            compact={true}
+            onExpand={handleExpand}
+          />
         </View>
       </GlassView>
     </Pressable>
@@ -284,15 +250,5 @@ const staticStyles = StyleSheet.create({
     lineHeight: lineHeight.xs, // 16px
     fontWeight: '400',
   },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2, // 2px entre controles (más juntos)
-  },
-  controlButton: {
-    minWidth: 40, // Zona activa de 40px
-    minHeight: 40, // Zona activa de 40px
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // controls y controlButton ahora están en FlowPlayerControls (con 48px mínimo)
 });

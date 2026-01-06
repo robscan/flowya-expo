@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { FlowPlayerControls } from '@/components/FlowPlayerControls';
 import { FlowSpotCard } from '@/components/FlowSpotCard';
 import { SpotCard } from '@/components/SpotCard';
 import { Icon, iconTouchableContainer } from '@/components/ui/Icon';
@@ -58,9 +59,7 @@ export default function FlowFullPlayerScreen() {
     return null;
   }
 
-  const handleToggleMute = () => {
-    narration.toggleMute();
-  };
+  // handleToggleMute ahora está en FlowPlayerControls
 
   const handleLike = () => {
     if (currentSpotId) {
@@ -163,28 +162,13 @@ export default function FlowFullPlayerScreen() {
         </View>
 
         {/* Controls */}
-        <View style={[styles.controls, { borderTopColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }]}>
-          <TouchableOpacity
-            onPress={handleToggleMute}
-            style={[iconTouchableContainer.base, styles.controlButton]}
-            activeOpacity={0.7}>
-            <Icon
-              name={narration.isMuted ? 'mute' : 'audio'}
-              size={24}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-          <View style={styles.controlInfo}>
-            <Text style={[textStyles.caption, { color: colors.icon }]}>
-              {narration.isMuted ? 'Muted' : 'Narration active'}
-            </Text>
-            {narration.currentNarration && (
-              <Text style={[textStyles.caption, { color: colors.icon }]} numberOfLines={1}>
-                {narration.currentNarration.text}
-              </Text>
-            )}
-          </View>
-        </View>
+        <FlowPlayerControls
+          variant="full"
+          showPrevious={true}
+          showNext={true}
+          showMute={true}
+          showMore={false}
+        />
       </ScrollView>
     </View>
   );
@@ -236,18 +220,6 @@ const styles = StyleSheet.create({
   spotsListContainer: {
     marginBottom: spacing.md,
   },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    marginTop: spacing.md,
-  },
-  controlButton: {
-    marginRight: spacing.md,
-  },
-  controlInfo: {
-    flex: 1,
-  },
+  // controls, controlButton y controlInfo ahora están en FlowPlayerControls
 });
 

@@ -17,58 +17,87 @@
  * - Accesibilidad: Debe poder usarse caminando (controles grandes, calma, indulgente, sin fricción)
  */
 
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  Animated,
-  Dimensions,
-  Alert,
-  Platform,
-} from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    Alert,
+    Animated,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
-import { useFlow } from '@/contexts/FlowContext';
-import { usePath } from '@/contexts/PathContext';
-import { useSpot } from '@/contexts/SpotContext';
-import { useSaved } from '@/contexts/SavedContext';
-import { useNarration } from '@/contexts/NarrationContext';
-import { useNarrationTriggers } from '@/components/NarrationController';
-import { geofencingSimulator } from '@/utils/geofencingSimulator';
-import { Colors } from '@/constants/theme';
-import { spacing } from '@/constants/spacing';
-import { textStyles, fontFamily, fontFamilyMedium, fontSize, lineHeight } from '@/constants/typography';
-import { borderRadius } from '@/constants/borders';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { GlassView } from '@/components/ui/GlassView';
-import { Icon } from '@/components/ui/Icon';
-import { iconTouchableContainer } from '@/components/ui/Icon';
-import { Tooltip } from '@/components/ui/Tooltip';
-import { SpotCardCompact } from '@/components/SpotCardCompact';
+import { FlowPlayerControls } from '@/components/FlowPlayerControls';
 import { FlowSpotCard } from '@/components/FlowSpotCard';
 import { FlowyaMapView } from '@/components/MapView';
-import { getFlowSpots, MovementMode } from '@/data/flows';
+import { useNarrationTriggers } from '@/components/NarrationController';
+import { SaveFlowModal } from '@/components/SaveFlowModal';
+import { GlassView } from '@/components/ui/GlassView';
+import { Icon, iconTouchableContainer } from '@/components/ui/Icon';
+import { Toast } from '@/components/ui/Toast';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { borderRadius } from '@/constants/borders';
+import { spacing } from '@/constants/spacing';
+import { Colors } from '@/constants/theme';
+import { fontFamily, fontFamilyMedium, fontSize, lineHeight, textStyles } from '@/constants/typography';
+import { useFlow } from '@/contexts/FlowContext';
+import { useNarration } from '@/contexts/NarrationContext';
+import { usePath } from '@/contexts/PathContext';
+import { useSaved } from '@/contexts/SavedContext';
+import { useSpot } from '@/contexts/SpotContext';
+import { Flow, getFlowSpots, MovementMode } from '@/data/flows';
+import { Spot } from '@/data/spots';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { calculateDistance, calculateDistanceToSpot } from '@/utils/distance';
+import { geofencingSimulator } from '@/utils/geofencingSimulator';
+import { mapMovementModeToNavigationMode, openNavigationApp } from '@/utils/navigationHelpers';
+import { updateSuggestionsForCurrentSpot } from '@/utils/spotSuggestion';
 import * as Location from 'expo-location';
-import { calculateDistanceToSpot, calculateDistance } from '@/utils/distance';
-import { openNavigationApp, mapMovementModeToNavigationMode } from '@/utils/navigationHelpers';
 
 type FlowViewMode = 'list' | 'map';
+
+// Helper function to detect if flow was started from a spot
+function isFlowStartedFromSpot(flow: Flow): boolean {
+  // Criterio principal: Título contiene "Flow from" (indica origen desde spot)
+  if (/^Flow from/i.test(flow.title)) {
+    return true;
+  }
+  // Criterio secundario: Descripción contiene texto característico
+  if (flow.description?.includes("We'll build the path as you move")) {
+    return true;
+  }
+  // Criterio terciario: Metadata indica origen desde spot
+  if (flow.metadata?.inferredFrom && flow.metadata.inferredFrom.length === 1) {
+    return true;
+  }
+  return false;
+}
+
 
 export function FlowScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
-  const { flowState, currentSpotId, nextSpotId, progress, pauseFlow, resumeFlow, endFlow, minimizeFlow, nextSpot } = useFlow();
-  const { getFlowById } = usePath();
+  const { flowState, currentSpotId, nextSpotId, progress, endFlow, minimizeFlow, addSpotToFlow, reorderFlowSpots, removeSpotFromFlow } = useFlow();
+  const { getFlowById, flows } = usePath();
   const { spots, getSpotById } = useSpot();
-  const { isSpotLikedFromPlayer, toggleLikeSpotFromPlayer, toggleSaveFlow } = useSaved();
+  const { toggleSaveFlow, getFlowCustomName, savedSpots, likedSpots, savedFlows } = useSaved();
+  const [showSaveFlowModal, setShowSaveFlowModal] = useState(false);
   const narration = useNarration();
   const narrationTriggers = useNarrationTriggers();
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [suggestedSpots, setSuggestedSpots] = useState<Spot[]>([]);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
+  const [toastIcon, setToastIcon] = useState<string | undefined>(undefined);
+  const [toastUndoAction, setToastUndoAction] = useState<(() => void) | undefined>(undefined);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showNarrationText, setShowNarrationText] = useState(false);
   
   const [viewMode, setViewMode] = useState<FlowViewMode>('list');
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -76,9 +105,15 @@ export function FlowScreen() {
 
   const isVisible = (flowState.status === 'active' || flowState.status === 'paused') && !flowState.isMinimized;
   const flow = flowState.currentPathId ? getFlowById(flowState.currentPathId) : null;
-  const flowSpots = flow ? getFlowSpots(flow, spots) : [];
+  const flowSpots = useMemo(() => flow ? getFlowSpots(flow, spots) : [], [flow, spots]);
   const currentSpot = currentSpotId ? getSpotById(currentSpotId) : null;
   const nextSpotData = nextSpotId ? getSpotById(nextSpotId) : null;
+
+  // Detectar si el flow se inició desde un spot
+  const isFromSpot = useMemo(() => {
+    if (!flow) return false;
+    return isFlowStartedFromSpot(flow);
+  }, [flow]);
 
   // Animación de entrada/salida
   useEffect(() => {
@@ -132,7 +167,35 @@ export function FlowScreen() {
     return () => {
       narration.stopNarration();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow?.id]); // Solo cuando cambia el flow (una vez al iniciar)
+
+  // Calcular sugerencias de spots cuando cambia el flow o el spot actual
+  useEffect(() => {
+    if (!isVisible || !flow || !currentSpot) {
+      setSuggestedSpots([]);
+      return;
+    }
+
+    const context = {
+      savedSpots,
+      likedSpots,
+      savedFlows,
+      allFlows: flows,
+    };
+
+    // TypeScript narrowing: currentSpot is guaranteed to be non-null after the guard clause
+    const suggestions = updateSuggestionsForCurrentSpot(
+      currentSpot,
+      userLocation,
+      spots,
+      context,
+      flow,
+      5 // Limitar a 5 sugerencias
+    );
+
+    setSuggestedSpots(suggestions);
+  }, [isVisible, flow, currentSpot, userLocation, spots, savedSpots, likedSpots, savedFlows, flows]);
 
   // Integrar geofencing con narration triggers - solo cuando usuario está cerca de spot
   useEffect(() => {
@@ -172,19 +235,65 @@ export function FlowScreen() {
       removeCallbacks();
       geofencingSimulator.stopMonitoring();
     };
-  }, [isVisible, flow?.id, flowSpots.length, userLocation, narrationTriggers]);
+  }, [isVisible, flow, flowSpots, userLocation, narrationTriggers]);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info', icon?: string, undoAction?: () => void) => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastIcon(icon);
+    setToastUndoAction(undoAction);
+    setToastVisible(true);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToastVisible(false);
+    setToastUndoAction(undefined);
+  }, []);
+
+  // Handler para abrir navegación (reutilizable en List y Map views)
+  // Debe estar antes del early return para cumplir con reglas de hooks
+  const handleOpenNavigation = useCallback(async () => {
+    if (!userLocation || !nextSpotData) {
+      Alert.alert(
+        'Navigation unavailable',
+        'Location and next spot are required to open navigation.'
+      );
+      return;
+    }
+
+    if (!flow) {
+      Alert.alert('Error', 'Flow information is missing.');
+      return;
+    }
+
+    try {
+      const navigationMode = mapMovementModeToNavigationMode(flow.movementMode);
+      const success = await openNavigationApp(
+        userLocation,
+        nextSpotData.location,
+        navigationMode
+      );
+
+      if (!success) {
+        Alert.alert(
+          'Navigation unavailable',
+          'Could not open navigation app. Please try again or use Google Maps in your browser.'
+        );
+      }
+    } catch (error) {
+      console.error('Error opening navigation:', error);
+      Alert.alert(
+        'Error',
+        'An error occurred while opening navigation. Please try again.'
+      );
+    }
+  }, [userLocation, nextSpotData, flow]);
 
   if (!isVisible || !flow) {
     return null;
   }
 
-  const handlePause = () => {
-    if (flowState.status === 'active') {
-      pauseFlow();
-    } else if (flowState.status === 'paused') {
-      resumeFlow();
-    }
-  };
+  // handlePause ahora está manejado por FlowPlayerControls con sincronización automática
 
   const handleMinimize = () => {
     minimizeFlow();
@@ -235,19 +344,73 @@ export function FlowScreen() {
   const handleCloseAndSave = () => {
     if (!flow) return;
     setShowCloseConfirmModal(false);
-    toggleSaveFlow(flow.id);
+    // Mostrar modal para nombrar el flow
+    setShowSaveFlowModal(true);
+  };
+
+  const handleSaveFlowWithName = (name: string) => {
+    if (!flow) return;
+    toggleSaveFlow(flow.id, name);
+    setShowSaveFlowModal(false);
     endFlow();
     router.back();
   };
 
-  const handleNext = () => {
-    nextSpot();
+  const handleCancelSaveFlow = () => {
+    setShowSaveFlowModal(false);
+    // Si cancelan, volver al modal de confirmación
+    setShowCloseConfirmModal(true);
   };
 
-  const handleLike = () => {
-    if (currentSpotId) {
-      toggleLikeSpotFromPlayer(currentSpotId);
+  // handleNext ahora está manejado por FlowPlayerControls
+
+  const handleMoveUp = (spotId: string) => {
+    if (!flow) return;
+    const spotIndex = flow.spots.indexOf(spotId);
+    if (spotIndex <= flowState.currentSpotIndex + 1) return; // No mover si es el primero o antes
+    
+    const newOrder = [...flow.spots];
+    [newOrder[spotIndex - 1], newOrder[spotIndex]] = [newOrder[spotIndex], newOrder[spotIndex - 1]];
+    reorderFlowSpots(newOrder);
+  };
+
+  const handleMoveDown = (spotId: string) => {
+    if (!flow) return;
+    const spotIndex = flow.spots.indexOf(spotId);
+    if (spotIndex >= flow.spots.length - 1) return; // No mover si es el último
+    
+    const newOrder = [...flow.spots];
+    [newOrder[spotIndex], newOrder[spotIndex + 1]] = [newOrder[spotIndex + 1], newOrder[spotIndex]];
+    reorderFlowSpots(newOrder);
+  };
+
+  const handleRemoveSpot = (spotId: string) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/7807ebbf-84f7-465d-ad24-4eb47c053dcc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FlowScreen.tsx:355',message:'handleRemoveSpot called',data:{spotId,removeSpotFromFlowType:typeof removeSpotFromFlow,isFunction:typeof removeSpotFromFlow === 'function'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    const spot = getSpotById(spotId);
+    if (typeof removeSpotFromFlow !== 'function') {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/7807ebbf-84f7-465d-ad24-4eb47c053dcc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FlowScreen.tsx:360',message:'ERROR: removeSpotFromFlow is not a function',data:{spotId,removeSpotFromFlowType:typeof removeSpotFromFlow},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      console.error('removeSpotFromFlow is not a function', typeof removeSpotFromFlow);
+      return;
     }
+    removeSpotFromFlow(spotId);
+    
+    // Si es un flow desde spot, agregar a sugerencias
+    if (isFromSpot && spot && !suggestedSpots.find(s => s.id === spot.id)) {
+      setSuggestedSpots(prev => [...prev, spot]);
+    }
+    
+    // Mostrar toast con undo
+    showToast(`Spot "${spot?.name || 'Unnamed'}" removed`, 'info', 'close', () => {
+      // Undo: agregar de vuelta
+      addSpotToFlow(spotId);
+      if (isFromSpot && spot) {
+        setSuggestedSpots(prev => prev.filter(s => s.id !== spot.id));
+      }
+    });
   };
 
   const renderHeader = () => (
@@ -386,71 +549,189 @@ export function FlowScreen() {
             </View>
             <GlassView style={styles.currentSpotCard} intensity="light" opacity="medium">
               <View style={styles.currentSpotCardContent}>
-                {/* Left: Title and info */}
+                {/* Title and description */}
                 <View style={styles.currentSpotCardLeft}>
                   <Text style={[styles.currentSpotTitle, { color: colors.text }]} numberOfLines={1}>
                     {currentSpot.name || 'Unnamed spot'}
                   </Text>
                   {currentSpot.description && (
-                    <Text style={[styles.currentSpotDescription, { color: colors.icon }]} numberOfLines={2}>
+                    <Text style={[styles.currentSpotDescription, { color: colors.text }]} numberOfLines={3}>
                       {currentSpot.description}
                     </Text>
                   )}
-                  {userLocation && (
-                    <View style={styles.currentSpotDistance}>
-                      <Icon name="map" size={12} color={colors.icon} />
-                      <Text style={[styles.currentSpotDistanceText, { color: colors.icon }]}>
-                        {(() => {
-                          const dist = calculateDistanceToSpot(userLocation, currentSpot.location);
-                          if (!dist) return '';
-                          if (dist < 1000) return `${Math.round(dist)}m`;
-                          return `${(dist / 1000).toFixed(1)} km`;
-                        })()}
-                      </Text>
-                    </View>
-                  )}
                 </View>
-                {/* Right: Chip (placeholder for Scope 13) */}
-                <View style={styles.currentSpotCardRight}>
-                  {/* TODO: Scope 13 - Chip "Integra a plan" */}
+                
+                {/* Footer: Metadata (distancia + tiempo estimado) y acciones */}
+                <View style={styles.currentSpotMetadataFooter}>
+                  {/* Distancia */}
+                  {userLocation && (() => {
+                    const dist = calculateDistanceToSpot(userLocation, currentSpot.location);
+                    if (!dist) return null;
+                    return (
+                      <View style={styles.metadataItem}>
+                        <Icon name="map" size={14} color={colors.icon} />
+                        <Text style={[styles.metadataText, { color: colors.icon }]}>
+                          {dist < 1000 ? `${Math.round(dist)}m` : `${(dist / 1000).toFixed(1)} km`}
+                        </Text>
+                      </View>
+                    );
+                  })()}
+                  
+                  {/* Tiempo estimado al siguiente spot */}
+                  {nextSpotData && currentSpot && flow && (() => {
+                    const timeToNext = calculateTimeToNextSpot(
+                      currentSpot.location,
+                      nextSpotData.location,
+                      flow.movementMode
+                    );
+                    return (
+                      <View style={styles.metadataItem}>
+                        <Icon name="clock" size={14} color={colors.icon} />
+                        <Text style={[styles.metadataText, { color: colors.icon }]}>
+                          {timeToNext} min
+                        </Text>
+                      </View>
+                    );
+                  })()}
+                  
+                  {/* Get Directions */}
+                  {userLocation && nextSpotData && (
+                    <TouchableOpacity
+                      onPress={handleOpenNavigation}
+                      style={styles.getDirectionsButton}
+                      activeOpacity={0.7}>
+                      <Icon name="directions" size={16} color={colors.tint} />
+                      <Text style={[styles.getDirectionsText, { color: colors.tint }]}>
+                        Get directions
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </GlassView>
+            
+            {/* Narration Text Section (colapsable) */}
+            {narration.status === 'playing' && narration.currentNarration && (
+              <View style={styles.narrationSection}>
+                <TouchableOpacity
+                  onPress={() => setShowNarrationText(!showNarrationText)}
+                  style={styles.narrationToggle}
+                  activeOpacity={0.7}>
+                  <Icon 
+                    name="audio" 
+                    size={16} 
+                    color={narration.isMuted ? colors.icon : colors.tint} 
+                  />
+                  <Text style={[textStyles.caption, { color: colors.icon }]}>
+                    {showNarrationText ? 'Hide' : 'Show'} narration
+                  </Text>
+                </TouchableOpacity>
+                
+                {showNarrationText && (
+                  <Text 
+                    style={[styles.narrationText, { color: colors.tint }]}
+                    numberOfLines={4}>
+                    {narration.currentNarration.text}
+                  </Text>
+                )}
+              </View>
+            )}
             </View>
         )}
 
         {/* Listado de spots futuros con drag and drop */}
-        {futureSpots.length > 0 && (
+        {(futureSpots.length > 0 || (isFromSpot && suggestedSpots.length > 0)) && (
           <View style={styles.spotsListContainer}>
-            <Text style={[textStyles.heading3, { color: colors.text, marginBottom: spacing.sm, marginTop: spacing.md }]}>
-              UP NEXT
-            </Text>
-            {futureSpots.map((spot, relativeIndex) => {
-              const absoluteIndex = currentIndex + 1 + relativeIndex;
-              const distance = userLocation
-                ? calculateDistanceToSpot(userLocation, spot.location)
-                : undefined;
-              
-              // Calcular tiempo estimado desde el spot anterior (o current spot para el primero)
-              const previousSpot = relativeIndex === 0 ? currentSpot : futureSpots[relativeIndex - 1];
-              const estimatedTime = previousSpot && flow
-                ? calculateTimeToNextSpot(previousSpot.location, spot.location, flow.movementMode)
-                : undefined;
+            <View style={styles.upNextHeader}>
+              <Text style={[textStyles.heading3, { color: colors.text }]}>
+                UP NEXT
+              </Text>
+              {futureSpots.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setIsEditMode(!isEditMode)}
+                  style={iconTouchableContainer.base}
+                  activeOpacity={0.7}>
+                  <Icon 
+                    name={isEditMode ? "check" : "edit"} 
+                    size={20} 
+                    color={colors.text} 
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+            {/* Sección 1: Spots agregados al flow */}
+            {futureSpots.length > 0 && (
+              <>
+                {futureSpots.map((spot, relativeIndex) => {
+                  const absoluteIndex = currentIndex + 1 + relativeIndex;
+                  const isFirst = relativeIndex === 0;
+                  const isLast = relativeIndex === futureSpots.length - 1;
+                  const distance = userLocation
+                    ? calculateDistanceToSpot(userLocation, spot.location) ?? undefined
+                    : undefined;
+                  
+                  // Calcular tiempo estimado desde el spot anterior (o current spot para el primero)
+                  const previousSpot = relativeIndex === 0 ? currentSpot : futureSpots[relativeIndex - 1];
+                  const estimatedTime = previousSpot && flow
+                    ? calculateTimeToNextSpot(previousSpot.location, spot.location, flow.movementMode)
+                    : undefined;
 
-          return (
-                <FlowSpotCard
-                  key={spot.id}
-                  spot={spot}
-                  index={absoluteIndex}
-                  distance={distance}
-                  estimatedTime={estimatedTime}
-                  isActive={absoluteIndex === currentIndex}
-                  onPress={() => {
-                    // TODO: Implementar navegación al spot
-                  }}
-                />
-          );
-        })}
+                  return (
+                    <FlowSpotCard
+                      key={spot.id}
+                      spot={spot}
+                      index={absoluteIndex}
+                      distance={distance}
+                      estimatedTime={estimatedTime}
+                      isActive={absoluteIndex === currentIndex}
+                      isEditMode={isEditMode}
+                      isFirst={isFirst}
+                      isLast={isLast}
+                      onMoveUp={() => handleMoveUp(spot.id)}
+                      onMoveDown={() => handleMoveDown(spot.id)}
+                      onRemove={() => handleRemoveSpot(spot.id)}
+                      onPress={() => {
+                        router.push(`/spot-detail?id=${spot.id}`);
+                      }}
+                    />
+                  );
+                })}
+              </>
+            )}
+            {/* Sección 2: More Suggestions (solo si flow viene de spot) */}
+            {isFromSpot && suggestedSpots.length > 0 && (
+              <View 
+                style={[
+                  styles.suggestedSection, 
+                  { borderTopColor: colors.icon + '30' }
+                ]}
+              >
+                <Text style={[styles.suggestedSectionTitle, { color: colors.text }]}>
+                  More Suggestions
+                </Text>
+                {suggestedSpots.map((spot) => {
+                  const distance = userLocation
+                    ? calculateDistanceToSpot(userLocation, spot.location) ?? undefined
+                    : undefined;
+                  return (
+                    <FlowSpotCard
+                      key={`suggested-${spot.id}`}
+                      spot={spot}
+                      index={flowSpots.length + suggestedSpots.indexOf(spot)}
+                      distance={distance}
+                      isSuggested={true}
+                      onPress={() => {
+                        router.push(`/spot-detail?id=${spot.id}`);
+                      }}
+                      onAdd={() => {
+                        addSpotToFlow(spot.id);
+                        setSuggestedSpots((prev) => prev.filter((s) => s.id !== spot.id));
+                      }}
+                    />
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -463,43 +744,6 @@ export function FlowScreen() {
     // Calcular ruta punto a punto: desde ubicación actual hasta siguiente spot
     const routeFrom = userLocation;
     const routeTo = nextSpotData ? nextSpotData.location : null;
-
-    const handleOpenNavigation = async () => {
-      if (!userLocation || !nextSpotData) {
-        Alert.alert(
-          'Navigation unavailable',
-          'Location and next spot are required to open navigation.'
-        );
-        return;
-      }
-
-      if (!flow) {
-        Alert.alert('Error', 'Flow information is missing.');
-        return;
-      }
-
-      try {
-        const navigationMode = mapMovementModeToNavigationMode(flow.movementMode);
-        const success = await openNavigationApp(
-          userLocation,
-          nextSpotData.location,
-          navigationMode
-        );
-
-        if (!success) {
-          Alert.alert(
-            'Navigation unavailable',
-            'Could not open navigation app. Please try again or use Google Maps in your browser.'
-          );
-        }
-      } catch (error) {
-        console.error('Error opening navigation:', error);
-        Alert.alert(
-          'Error',
-          'An error occurred while opening navigation. Please try again.'
-        );
-      }
-    };
 
     return (
       <View style={styles.mapContainer}>
@@ -516,6 +760,16 @@ export function FlowScreen() {
           routeFrom={routeFrom}
           routeTo={routeTo}
         />
+        {/* Letrero siempre visible */}
+        {userLocation && nextSpotData && (
+          <View style={styles.navigationLabelContainer}>
+            <GlassView style={styles.navigationLabel} intensity="light" opacity="medium">
+              <Text style={[styles.navigationLabelText, { color: colors.text }]}>
+                How to get there
+              </Text>
+            </GlassView>
+          </View>
+        )}
         {/* Botón flotante de navegación */}
         {userLocation && nextSpotData && (
           <View style={styles.navigationButtonContainer}>
@@ -534,35 +788,12 @@ export function FlowScreen() {
   };
 
   const renderControls = () => (
-    <View style={styles.controls}>
-      <TouchableOpacity
-        onPress={handlePause}
-        style={[iconTouchableContainer.base, styles.controlButton]}
-        activeOpacity={0.7}>
-        <Icon
-          name={flowState.status === 'paused' ? 'play' : 'pause'}
-          size={24}
-          color={colors.text}
-        />
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => router.push('/flow-full-player')}
-        style={[iconTouchableContainer.base, styles.controlButton]}
-        activeOpacity={0.7}>
-        <Icon name="more" size={24} color={colors.text} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={handleNext}
-        style={[iconTouchableContainer.base, styles.controlButton]}
-        activeOpacity={0.7}
-        disabled={!nextSpotData}>
-        <Icon
-          name="next"
-          size={24}
-          color={nextSpotData ? colors.text : colors.icon}
-        />
-      </TouchableOpacity>
-    </View>
+    <FlowPlayerControls
+      variant="screen"
+      showPrevious={true}
+      showNext={true}
+      showMute={true}
+    />
   );
 
   return (
@@ -593,6 +824,16 @@ export function FlowScreen() {
           </>
         )}
         {renderControls()}
+        
+        <Toast
+          visible={toastVisible}
+          message={toastMessage}
+          type={toastType}
+          icon={toastIcon}
+          duration={3000}
+          onHide={hideToast}
+          onUndo={toastUndoAction}
+        />
       </Animated.View>
       
       {/* Modal de confirmación para web/iOS Safari */}
@@ -638,6 +879,16 @@ export function FlowScreen() {
           </GlassView>
         </View>
       </Modal>
+
+      {/* Modal para nombrar flow */}
+      <SaveFlowModal
+        visible={showSaveFlowModal}
+        flow={flow}
+        spots={spots}
+        currentName={flow ? getFlowCustomName(flow.id) : undefined}
+        onSave={handleSaveFlowWithName}
+        onCancel={handleCancelSaveFlow}
+      />
     </Modal>
   );
 }
@@ -745,17 +996,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   currentSpotCardContent: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     padding: spacing.sm,
     gap: spacing.sm,
   },
   currentSpotCardLeft: {
     flex: 1,
     gap: spacing.xs / 2,
-  },
-  currentSpotCardRight: {
-    justifyContent: 'center',
-    alignItems: 'flex-end',
   },
   currentSpotTitle: {
     fontFamily: fontFamilyMedium,
@@ -769,25 +1016,108 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.sm,
     fontWeight: '400',
   },
-  currentSpotDistance: {
+  currentSpotMetadataFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    flexWrap: 'wrap',
+    minHeight: 24, // Altura mínima para que siempre sea visible
+    paddingVertical: spacing.xs / 2, // Padding vertical para que sea más visible
+  },
+  metadataItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs / 2,
-    marginTop: spacing.xs / 2,
   },
-  currentSpotDistanceText: {
+  metadataText: {
     fontFamily,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.xs,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
     fontWeight: '400',
+  },
+  getDirectionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    minHeight: 48,
+    minWidth: 48,
+  },
+  getDirectionsText: {
+    fontFamily: fontFamilyMedium,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    fontWeight: '500',
+  },
+  narrationSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  narrationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingVertical: spacing.xs,
+    minHeight: 48,
+  },
+  narrationText: {
+    fontFamily: fontFamilyMedium,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    fontWeight: '400',
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
   },
   spotsListContainer: {
     gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  upNextHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  suggestedSection: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+  },
+  suggestedSectionTitle: {
+    fontFamily: fontFamilyMedium,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    fontWeight: '600',
+    marginBottom: spacing.md,
   },
   mapContainer: {
     flex: 1,
     minHeight: 400,
     position: 'relative',
+  },
+  navigationLabelContainer: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 999,
+    alignItems: 'center',
+  },
+  navigationLabel: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  navigationLabelText: {
+    fontFamily: fontFamilyMedium,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   navigationButtonContainer: {
     position: 'absolute',
@@ -807,19 +1137,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xl,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  controlButton: {
-    minWidth: 48,
-    minHeight: 48,
-  },
+  // controls y controlButton ahora están en FlowPlayerControls
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
