@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Suscribirse a cambios de autenticación (solo si Supabase está configurado)
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
       setIsLoading(false);
       return;
     }
@@ -98,6 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       // Primero intentar obtener sesión actual de Supabase
+      if (!supabase) {
+        setIsLoading(false);
+        return;
+      }
+      
       const { data: { session: currentSession }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -146,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
       return { error: new Error('Supabase not configured') as AuthError };
     }
     try {
@@ -173,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
       return { error: new Error('Supabase not configured') as AuthError };
     }
     try {
@@ -200,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
       setSession(null);
       setUser(null);
       await clearSession();
@@ -220,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
       return { error: new Error('Supabase not configured') as AuthError };
     }
     try {

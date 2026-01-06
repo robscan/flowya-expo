@@ -19,6 +19,9 @@ EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY=your_ios_key_here
 EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY=your_web_key_here
 EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=your_places_key_here
 EXPO_PUBLIC_OPENAI_API_KEY=your_openai_key_here
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url_here
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+EXPO_PUBLIC_OPENWEATHER_API_KEY=your_openweather_key_here
 ```
 
 To obtain API keys:
@@ -41,6 +44,21 @@ To obtain API keys:
 3. Navigate to API Keys section
 4. Create a new API key
 5. Add it to your `.env` file as `EXPO_PUBLIC_OPENAI_API_KEY`
+
+**Supabase (optional, for user authentication):**
+1. Go to [Supabase](https://supabase.com/)
+2. Create a new project or select an existing one
+3. Go to Project Settings > API
+4. Copy the "Project URL" and add it as `EXPO_PUBLIC_SUPABASE_URL`
+5. Copy the "anon public" key and add it as `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+6. Note: The app will work without Supabase credentials, but authentication features will be disabled
+
+**OpenWeather API Key (optional, for weather information):**
+1. Go to [OpenWeatherMap](https://openweathermap.org/api)
+2. Sign up for a free account
+3. Navigate to API Keys section
+4. Create a new API key
+5. Add it to your `.env` file as `EXPO_PUBLIC_OPENWEATHER_API_KEY`
 
 **Important:** The `.env` file is in `.gitignore` and should never be committed to version control.
 
